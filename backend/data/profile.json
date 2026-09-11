@@ -28,6 +28,25 @@
       "kind": "github"
     }
   ],
+  "interests": [
+    {
+      "label": "Go to Spotify",
+      "note": "Often playing",
+      "href": "https://open.spotify.com/user/orbitrix",
+      "kind": "spotify"
+    },
+    {
+      "label": "Open Instagram",
+      "note": "Life outside code",
+      "href": "https://www.instagram.com/alexanderherlan2/",
+      "kind": "instagram"
+    },
+    {
+      "label": "Find me on Steam",
+      "note": "Occasionally gaming",
+      "href": "https://steamcommunity.com/profiles/76561197961799136",
+      "kind": "steam"
+    }
+  ],
   "focus": ["Product engineering", "Applied AI", "Cloud systems"]
 }
-

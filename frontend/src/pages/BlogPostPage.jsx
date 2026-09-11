@@ -21,12 +21,17 @@ export default function BlogPostPage() {
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
+    setError("");
     getPost(slug, controller.signal)
-      .then(setPost)
+      .then((result) => {
+        if (!controller.signal.aborted) setPost(result);
+      })
       .catch((requestError) => {
         if (requestError.name !== "AbortError") setError(requestError.message);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
     return () => controller.abort();
   }, [slug]);
 
@@ -36,6 +41,10 @@ export default function BlogPostPage() {
 
   if (error) {
     return <div className="container content-page"><ErrorState message={error} /></div>;
+  }
+
+  if (!post) {
+    return <div className="container content-page"><ErrorState message="This journal note could not be opened." /></div>;
   }
 
   return (
@@ -72,4 +81,3 @@ export default function BlogPostPage() {
     </article>
   );
 }
-

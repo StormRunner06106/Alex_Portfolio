@@ -51,11 +51,15 @@ export default function BlogPage() {
   useEffect(() => {
     const controller = new AbortController();
     getPosts(controller.signal)
-      .then(setPosts)
+      .then((result) => {
+        if (!controller.signal.aborted) setPosts(result);
+      })
       .catch((requestError) => {
         if (requestError.name !== "AbortError") setError(requestError.message);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
     return () => controller.abort();
   }, []);
 
@@ -80,7 +84,12 @@ export default function BlogPage() {
         eyebrow="Journal"
         title="Notes from the build."
         description="Practical observations on applied AI, resilient products, and the technology choices behind them."
-        aside={<p className="issue-count">{posts.length || 10}<span>field notes</span></p>}
+        aside={(
+          <div className="journal-heading-aside">
+            <p className="issue-count">{posts.length || 10}<span>field notes</span></p>
+            <Link className="write-link" to="/blog/manage"><Icon name="plus" size={15} /> Write</Link>
+          </div>
+        )}
       />
 
       <div className="journal-tools reveal">
@@ -129,4 +138,3 @@ export default function BlogPage() {
     </section>
   );
 }
-

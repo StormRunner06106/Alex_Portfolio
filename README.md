@@ -42,6 +42,8 @@ npm run dev
 
 Open `http://localhost:5173`. Vite proxies `/api` requests to FastAPI on port 8000.
 
+The interface loads Roboto Flex from Google Fonts for its compact UI copy, while editorial headings keep the résumé-inspired serif treatment.
+
 ## Contact-form delivery
 
 The form uses `POST /api/contact` and sends email through SMTP. Copy `backend/.env.example` to `backend/.env`, fill in the SMTP values, and start the API with the environment file:
@@ -52,6 +54,19 @@ uvicorn backend.main:app --reload --port 8000 --env-file backend\.env
 
 If SMTP is unavailable, the API returns a clear delivery error and the page keeps Alex's direct email, LinkedIn, and GitHub links visible.
 
+## Journal publisher
+
+Open `http://localhost:5173/blog/manage` and sign in with the journal admin password. Publishing writes the new article directly to `backend/data/posts.json`; no database is involved.
+
+Set unique production values in `backend/.env`:
+
+```dotenv
+JOURNAL_ADMIN_PASSWORD=replace-with-a-strong-password
+JOURNAL_TOKEN_SECRET=replace-with-a-long-random-secret
+```
+
+The login endpoint returns a signed session that expires after four hours. The password remains server-side and the browser stores only the temporary token.
+
 ## Content API
 
 - `GET /api/profile`
@@ -59,6 +74,9 @@ If SMTP is unavailable, the API returns a clear delivery error and the page keep
 - `GET /api/skills`
 - `GET /api/posts`
 - `GET /api/posts/{slug}`
+- `POST /api/auth/login`
+- `GET /api/auth/session`
+- `POST /api/posts` (authenticated)
 - `GET /api/resume`
 - `POST /api/contact`
 
@@ -74,4 +92,3 @@ uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
 When `frontend/dist` exists, FastAPI serves the built single-page application and supports direct links such as `/experience` and `/blog/{slug}`.
-

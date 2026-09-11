@@ -17,7 +17,9 @@ async function request(path, options = {}) {
     } catch {
       // Keep the friendly fallback when a proxy or server returns non-JSON.
     }
-    throw new Error(detail);
+    const error = new Error(detail);
+    error.status = response.status;
+    throw error;
   }
 
   return response.json();
@@ -28,9 +30,24 @@ export const getExperience = (signal) => request("/api/experience", { signal });
 export const getSkills = (signal) => request("/api/skills", { signal });
 export const getPosts = (signal) => request("/api/posts", { signal });
 export const getPost = (slug, signal) => request(`/api/posts/${slug}`, { signal });
+export const loginAdmin = (password) =>
+  request("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+export const getAdminSession = (token, signal) =>
+  request("/api/auth/session", {
+    signal,
+    headers: { Authorization: `Bearer ${token}` },
+  });
+export const createPost = (payload, token) =>
+  request("/api/posts", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
 export const sendContactMessage = (payload) =>
   request("/api/contact", {
     method: "POST",
     body: JSON.stringify(payload),
   });
-

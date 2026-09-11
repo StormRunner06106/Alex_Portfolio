@@ -27,10 +27,38 @@ const paths = {
       <rect x="3" y="3" width="18" height="18" rx="4" />
     </>
   ),
+  instagram: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="M17.5 6.5h.01" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="4" y="10" width="16" height="11" rx="3" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
+    </>
+  ),
+  logout: <path d="M10 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5m4-4 3-3-3-3m3 3H8" />,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  plus: <path d="M12 5v14M5 12h14" />,
   search: <path d="m20 20-4.35-4.35m2.35-5.15a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" />,
   send: <path d="m21 3-7.5 18-3.8-7.7L2 9.5 21 3Zm-11.3 10.3L14 9" />,
   spark: <path d="M12 2c.6 5.4 3.6 8.4 9 9-5.4.6-8.4 3.6-9 9-.6-5.4-3.6-8.4-9-9 5.4-.6 8.4-3.6 9-9Z" />,
+  spotify: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M7.5 9.5c3.5-1 7.3-.6 10 1M8.3 12.5c2.8-.7 6-.4 8.4.8M9 15.3c2.2-.5 4.6-.2 6.6.8" />
+    </>
+  ),
+  steam: (
+    <>
+      <circle cx="15.5" cy="8.5" r="3.5" />
+      <circle cx="7" cy="16.5" r="2.5" />
+      <path d="m9 15 3.7-2.4 2.8-.6M4.8 15.3 2.5 14" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 20, className = "" }) {
@@ -51,4 +79,3 @@ export default function Icon({ name, size = 20, className = "" }) {
     </svg>
   );
 }
-

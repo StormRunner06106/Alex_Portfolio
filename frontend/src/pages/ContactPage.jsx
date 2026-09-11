@@ -32,6 +32,7 @@ export default function ContactPage({ profile, error }) {
   }
 
   const socials = profile?.socials ?? [];
+  const interests = profile?.interests ?? [];
 
   return (
     <section className="content-page container contact-page">
@@ -120,6 +121,27 @@ export default function ContactPage({ profile, error }) {
             <p>I’m especially interested in full-stack product work, applied AI, and systems that make demanding workflows feel calmer.</p>
           </div>
 
+          <div className="culture-card">
+            <p className="eyebrow">Beyond the build</p>
+            <h2><strong>I love music</strong> and nearly always have something playing on Spotify.</h2>
+            <p>Off the clock, I share a little life on Instagram and occasionally disappear into a game on Steam.</p>
+            <div className="culture-links">
+              {interests.map((interest) => (
+                <a
+                  className={`culture-link culture-link--${interest.kind}`}
+                  href={interest.href}
+                  key={interest.kind}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <span className="culture-link__icon"><Icon name={interest.kind} /></span>
+                  <span><small>{interest.note}</small><strong>{interest.label}</strong></span>
+                  <Icon name="arrowUpRight" size={18} />
+                </a>
+              ))}
+            </div>
+          </div>
+
           <div className="social-list">
             <p className="eyebrow">Find me here</p>
             {socials.map((social) => (
@@ -139,4 +161,3 @@ export default function ContactPage({ profile, error }) {
     </section>
   );
 }
-

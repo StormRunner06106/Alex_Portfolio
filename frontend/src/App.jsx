@@ -7,6 +7,7 @@ import BlogPage from "./pages/BlogPage";
 import BlogPostPage from "./pages/BlogPostPage";
 import ContactPage from "./pages/ContactPage";
 import ExperiencePage from "./pages/ExperiencePage";
+import JournalAdminPage from "./pages/JournalAdminPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import SkillsPage from "./pages/SkillsPage";
 
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/experience" element={<ExperiencePage />} />
         <Route path="/skills" element={<SkillsPage />} />
         <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/manage" element={<JournalAdminPage />} />
         <Route path="/blog/:slug" element={<BlogPostPage />} />
         <Route
           path="/contact"
@@ -55,4 +57,3 @@ export default function App() {
     </Layout>
   );
 }
-
