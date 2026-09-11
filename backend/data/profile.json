@@ -1,0 +1,33 @@
+{
+  "name": "Alexander Herlan",
+  "display_name": "Alex Herlan",
+  "title": "Senior Software Engineer · DevOps & IT Manager",
+  "eyebrow": "Full-stack engineer · AI builder · systems thinker",
+  "headline": "I build dependable software for ideas that need to work in the real world.",
+  "summary": "I’m a hands-on software engineer with more than 27 years across full-stack development, cloud infrastructure, IT leadership, and user experience. I turn complex requirements into calm, useful products—from responsive web platforms and legacy-system modernization to mobile AI and real-time operational tools.",
+  "availability": "Open to thoughtful product and engineering work",
+  "portrait": "/alexander-herlan.png",
+  "resume_url": "/api/resume",
+  "socials": [
+    {
+      "label": "Email",
+      "value": "alexwherlan@gmail.com",
+      "href": "mailto:alexwherlan@gmail.com",
+      "kind": "email"
+    },
+    {
+      "label": "LinkedIn",
+      "value": "alexander-herlan",
+      "href": "https://linkedin.com/in/alexander-herlan",
+      "kind": "linkedin"
+    },
+    {
+      "label": "GitHub",
+      "value": "AlexanderHerlan",
+      "href": "https://github.com/AlexanderHerlan",
+      "kind": "github"
+    }
+  ],
+  "focus": ["Product engineering", "Applied AI", "Cloud systems"]
+}
+

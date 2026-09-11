@@ -1,0 +1,41 @@
+{
+  "intro": "A broad toolkit shaped by shipping products, supporting critical systems, and learning whatever the work requires.",
+  "principles": [
+    "Solve the operational problem, not just the ticket",
+    "Make complex systems feel understandable",
+    "Leave the codebase easier to change"
+  ],
+  "categories": [
+    {
+      "name": "Languages & Web",
+      "description": "From service layers to responsive interfaces.",
+      "accent": "blue",
+      "items": ["Python", "JavaScript", "TypeScript", "Go", "PHP", "Java", "Kotlin", "C / C++", "HTML5", "CSS3", "Sass"]
+    },
+    {
+      "name": "Frameworks & Runtime",
+      "description": "Tools for building focused, maintainable products.",
+      "accent": "lavender",
+      "items": ["FastAPI", "Django", "Flask", "React", "Preact", "Angular", "RxJS", "Node.js", "Bun", "WordPress"]
+    },
+    {
+      "name": "AI & Data",
+      "description": "Practical machine intelligence and reliable data layers.",
+      "accent": "peach",
+      "items": ["TensorFlow Lite", "Computer Vision", "Natural Language Processing", "Scrapy", "PostgreSQL", "SQL Server", "MySQL", "MongoDB", "Redis"]
+    },
+    {
+      "name": "Cloud & Delivery",
+      "description": "Infrastructure that supports the product without stealing the show.",
+      "accent": "mint",
+      "items": ["AWS", "Azure DevOps", "Cloudflare Workers", "D1", "Durable Objects", "R2", "Docker", "Kubernetes", "Linux", "Git", "CI/CD"]
+    },
+    {
+      "name": "Product & Operations",
+      "description": "The connective work that turns software into an outcome.",
+      "accent": "yellow",
+      "items": ["System Architecture", "REST APIs", "Responsive Design", "UX Collaboration", "Technical Support", "IT Leadership", "Jira", "Google Workspace", "Microsoft 365"]
+    }
+  ]
+}
+

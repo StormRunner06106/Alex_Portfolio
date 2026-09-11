@@ -1,0 +1,252 @@
+[
+  {
+    "slug": "calm-systems-in-critical-environments",
+    "title": "Calm Systems in Critical Environments",
+    "excerpt": "What overnight healthcare support taught me about observability, escalation, and designing for the person under pressure.",
+    "published_at": "2013-10-16",
+    "read_time": 5,
+    "tags": ["Healthcare IT", "Operations", "Reliability"],
+    "accent": "mint",
+    "content": [
+      {
+        "heading": "The interface is part of the incident response",
+        "paragraphs": [
+          "In a critical environment, the best interface is rarely the one with the most information. It is the one that helps a tired person identify the next useful action. Clear severity, an obvious owner, and a short trail of recent events matter more than a decorative dashboard.",
+          "Production support made this tangible for me. When a patient-facing workflow is interrupted, uncertainty grows faster than the technical problem. Good systems reduce that uncertainty by making state visible and escalation paths explicit."
+        ]
+      },
+      {
+        "heading": "Design for the handoff",
+        "paragraphs": [
+          "A fix is only half of an incident. The other half is leaving a useful record for the next person: what happened, what was checked, what changed, and what still needs attention. That small discipline compounds into organizational memory.",
+          "I now carry the same principle into software engineering. Logs should explain behavior, alerts should point toward decisions, and runbooks should be written for the moment when context is scarce. Reliability is a product experience for the people operating the product."
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "turning-beer-reviews-into-flavor-maps",
+    "title": "Turning Beer Reviews into Flavor Maps",
+    "excerpt": "A practical early NLP experiment: translating messy, enthusiastic review text into a useful recommendation signal.",
+    "published_at": "2016-06-09",
+    "read_time": 6,
+    "tags": ["Python", "NLP", "Scrapy"],
+    "accent": "peach",
+    "content": [
+      {
+        "heading": "Start with the language people already use",
+        "paragraphs": [
+          "Beer reviews are expressive, inconsistent, and full of useful sensory language. That made them an interesting source for a recommendation engine. Instead of asking users to learn a rigid flavor taxonomy, we could learn from the adjectives reviewers naturally repeated.",
+          "The first challenge was collection. A Scrapy pipeline gathered public review text, normalized obvious variations, and retained enough source context to investigate outliers later. Clean provenance mattered because a mysterious score is difficult to improve."
+        ]
+      },
+      {
+        "heading": "Simple models can create real value",
+        "paragraphs": [
+          "The flavor profiles began with frequency, weighting, and domain-specific synonym groups. It was not a giant language model; it was a focused tool with a clear job. That constraint made the output easier to explain and tune with the product team.",
+          "The lesson has aged well: use the smallest model that reliably improves the experience. Sophistication is valuable when it earns its place through better outcomes, not when it merely makes the architecture sound impressive."
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "scrapy-pipelines-that-age-well",
+    "title": "Scrapy Pipelines That Age Well",
+    "excerpt": "Patterns for keeping a web-scraping system observable, respectful, and maintainable as source sites evolve.",
+    "published_at": "2018-03-22",
+    "read_time": 7,
+    "tags": ["Python", "Scrapy", "Data Engineering"],
+    "accent": "blue",
+    "content": [
+      {
+        "heading": "Assume the source will change",
+        "paragraphs": [
+          "A scraper is an agreement with a document you do not control. Selectors change, fields disappear, and a page that looked uniform reveals a decade of edge cases. The maintainable response is to isolate extraction rules, validate every record, and make failures visible before they quietly poison downstream data.",
+          "I prefer small spiders with explicit responsibilities and item pipelines that handle normalization. Fixtures from real pages make regression tests useful, while per-source metrics reveal whether a deployment changed yield or quality."
+        ]
+      },
+      {
+        "heading": "Politeness is architecture",
+        "paragraphs": [
+          "Rate limits, caching, retries, and clear identification are not optional finishing touches. They shape the system. A respectful crawler is less likely to create operational trouble and usually produces more consistent data as a side effect.",
+          "The best scraping pipeline is boring to operate. It resumes safely, explains skipped records, and lets a developer update one source without fearing a cascade of unrelated changes."
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "growing-it-without-growing-chaos",
+    "title": "Growing IT Without Growing Chaos",
+    "excerpt": "A field guide to scaling a small organization’s technology through standards, documentation, and sensible defaults.",
+    "published_at": "2020-11-12",
+    "read_time": 5,
+    "tags": ["IT Leadership", "Security", "Operations"],
+    "accent": "yellow",
+    "content": [
+      {
+        "heading": "Consistency is a form of leverage",
+        "paragraphs": [
+          "Small organizations often grow through a series of urgent, reasonable exceptions. Soon every laptop, account, and workflow has its own history. The first step toward scale is not buying a larger platform—it is agreeing on a small number of defaults.",
+          "Identity, device setup, shared storage, physical access, and offboarding deserve documented paths. A consistent baseline makes support faster and security easier to reason about."
+        ]
+      },
+      {
+        "heading": "Meet people where the work happens",
+        "paragraphs": [
+          "Policies fail when they ignore daily constraints. In a laboratory, uptime, traceability, and physical workflow are connected. Technology decisions have to account for gloves, shared stations, regulated data, and the cost of interrupting a test process.",
+          "Good IT leadership combines standards with observation. Spend time with the people doing the work, remove the friction that creates workarounds, and make the secure path the natural path."
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "from-paper-to-structured-data-with-vision-ai",
+    "title": "From Paper to Structured Data with Vision AI",
+    "excerpt": "Lessons from using cloud computer vision to categorize laboratory documents without hiding uncertainty from operators.",
+    "published_at": "2021-07-08",
+    "read_time": 7,
+    "tags": ["AI", "Computer Vision", "Python"],
+    "accent": "lavender",
+    "content": [
+      {
+        "heading": "Recognition is only the first step",
+        "paragraphs": [
+          "An OCR or vision service can return impressive output while still leaving the product team with the difficult work: deciding which text matters, how confident the system should be, and when a person needs to review the result.",
+          "For laboratory documents, I treated extraction as a pipeline. Image quality checks came first, recognition second, domain validation third, and classification last. Keeping those stages separate made errors explainable."
+        ]
+      },
+      {
+        "heading": "Build uncertainty into the workflow",
+        "paragraphs": [
+          "The safest automation does not pretend every prediction is equal. Confidence thresholds, structured validation, and a review queue allow a system to move quickly on clear cases while giving ambiguous documents the attention they deserve.",
+          "That human review is not a failure of AI. It is part of a complete product. Each correction can improve rules, training data, and monitoring, creating a feedback loop grounded in real operations."
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "real-time-angular-without-the-tangle",
+    "title": "Real-Time Angular Without the Tangle",
+    "excerpt": "How to use RxJS as a clear model for changing state instead of letting streams spread complexity through an application.",
+    "published_at": "2022-05-19",
+    "read_time": 8,
+    "tags": ["Angular", "RxJS", "Frontend"],
+    "accent": "blue",
+    "content": [
+      {
+        "heading": "Name the events that matter",
+        "paragraphs": [
+          "A real-time auction interface has several clocks running at once: the server’s state, the user’s intent, network latency, and the visible countdown. RxJS is useful because it gives those changes a vocabulary, but only if streams correspond to meaningful product events.",
+          "I start by naming the sources and defining which one is authoritative. Server events update the canonical auction state. Local actions can create an optimistic state, but they remain distinguishable until acknowledged."
+        ]
+      },
+      {
+        "heading": "Keep the view boring",
+        "paragraphs": [
+          "The component should receive a coherent view model rather than coordinate half a dozen subscriptions. Combining streams at a boundary keeps templates predictable and makes loading, reconnecting, and error states testable.",
+          "Reactive code is clearest when it reads like a timeline. Explicit cancellation, narrow side effects, and descriptive operators help the next engineer understand not just what updates, but why."
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "modern-apis-over-legacy-data",
+    "title": "Modern APIs Over Legacy Data",
+    "excerpt": "A careful approach to modernizing the experience around a mature database while protecting the history inside it.",
+    "published_at": "2023-09-14",
+    "read_time": 7,
+    "tags": ["REST APIs", "Databases", "Architecture"],
+    "accent": "mint",
+    "content": [
+      {
+        "heading": "History is part of the domain",
+        "paragraphs": [
+          "A legacy database is often described as a technical obstacle, but its irregularities usually encode years of business decisions. Replacing it without understanding that history can produce a cleaner schema and a less correct product.",
+          "A modern API can act as a translation boundary. It gives new clients consistent resources and validation while isolating the rules required to work safely with older records."
+        ]
+      },
+      {
+        "heading": "Migrate in observable steps",
+        "paragraphs": [
+          "I favor small, measurable transitions: introduce the boundary, compare old and new behavior, backfill with reconciliation reports, and only then retire a legacy path. Every stage should have a way to answer whether data was lost or behavior changed.",
+          "Modernization succeeds when users experience steady improvement and operators retain confidence. The architecture matters, but trust is the real migration target."
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "useful-object-detection-on-android",
+    "title": "Useful Object Detection on Android",
+    "excerpt": "Moving from a promising model to a practical TensorFlow Lite pipeline under mobile performance constraints.",
+    "published_at": "2024-10-03",
+    "read_time": 8,
+    "tags": ["AI", "Android", "TensorFlow Lite"],
+    "accent": "peach",
+    "content": [
+      {
+        "heading": "The device changes the definition of accurate",
+        "paragraphs": [
+          "A model can score well in a notebook and still be unusable on a phone. Frame rate, thermal limits, camera variability, and time-to-alert are part of accuracy because they determine whether the result arrives when it matters.",
+          "Testing YOLO and TensorFlow Lite options made the tradeoffs concrete. The right model was the one that produced stable detections within the device’s compute budget, not simply the largest model we could convert."
+        ]
+      },
+      {
+        "heading": "Train for the camera you have",
+        "paragraphs": [
+          "Public datasets supplied breadth, while custom captures exposed the angles, lighting, backgrounds, and object sizes the application would actually see. Reviewing false positives was especially valuable because a safety workflow has a real cost for every alert.",
+          "A production detection pipeline is model, camera, preprocessing, thresholds, evidence capture, and human response. Improving any one piece helps; measuring the entire path is what makes the feature useful."
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "designing-an-alert-pipeline-people-can-trust",
+    "title": "Designing an Alert Pipeline People Can Trust",
+    "excerpt": "Why evidence, timing, and graceful failure matter as much as detection in an AI-assisted safety workflow.",
+    "published_at": "2025-06-26",
+    "read_time": 6,
+    "tags": ["System Design", "AI", "Twilio"],
+    "accent": "lavender",
+    "content": [
+      {
+        "heading": "An alert is a chain of decisions",
+        "paragraphs": [
+          "Detection starts the workflow; it does not complete it. A useful alert needs context, a timestamp, a clear source, supporting evidence, and a dependable path to a person who can evaluate it.",
+          "For a mobile safety platform, that meant pairing a screenshot with a short evidence clip, initiating a call workflow, and forwarding incident information to an existing monitoring portal. Each transition needed an explicit success and failure state."
+        ]
+      },
+      {
+        "heading": "Design the degraded path first",
+        "paragraphs": [
+          "Networks disappear, uploads stall, and downstream services become unavailable. The product should preserve evidence locally, communicate delivery state honestly, and retry without multiplying alerts.",
+          "Trust grows when the interface distinguishes detected, queued, delivered, acknowledged, and resolved. Those words turn a complicated distributed workflow into a shared understanding for users and operators."
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "small-durable-systems-on-cloudflare",
+    "title": "Small, Durable Systems on Cloudflare",
+    "excerpt": "A pragmatic architecture for lightweight products that still need relational data, files, and real-time coordination.",
+    "published_at": "2026-06-11",
+    "read_time": 7,
+    "tags": ["Cloudflare", "Preact", "Bun"],
+    "accent": "yellow",
+    "content": [
+      {
+        "heading": "Choose boundaries before services",
+        "paragraphs": [
+          "A lending workflow needs durable records, private documents, timely collaboration, and an audit-friendly trail. Those needs point to different storage and execution patterns, but they do not require a sprawling infrastructure diagram.",
+          "I used Workers for server-side execution, D1 for relational workflow data, R2 for documents, and Durable Objects for coordinated real-time conversations. Each service had one legible responsibility."
+        ]
+      },
+      {
+        "heading": "Lightweight does not mean temporary",
+        "paragraphs": [
+          "Preact and Bun kept the application loop fast, while schema migrations, typed boundaries, and idempotent operations protected the data. The goal was not minimum code at any cost; it was the smallest system that could be operated with confidence.",
+          "That is the architecture I increasingly prefer: close to users, explicit about state, and modest enough that one engineer can still understand the full path of a request."
+        ]
+      }
+    ]
+  }
+]

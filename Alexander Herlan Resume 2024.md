@@ -3,7 +3,7 @@
 **Senior Software Engineer · DevOps & IT Manager**
 
 1207 El Portal NW, Albuquerque, NM 87107  
-[813-402-8692](tel:+18134028692) · [alexwherlan@gmail.com](mailto:alexwherlan@gmail.com) · [alex.herlan.dev](https://alex.herlan.dev)
+[813-402-8692](tel:+18134028692) · [alexwherlan@gmail.com](mailto:alexwherlan@gmail.com) · [alex.herlan.dev](https://alex.herlan.dev) · [LinkedIn](https://linkedin.com/in/alexander-herlan) · [GitHub](https://github.com/AlexanderHerlan)
 
 ## Overview
 
