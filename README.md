@@ -69,6 +69,14 @@ JOURNAL_TOKEN_SECRET=replace-with-a-long-random-secret
 
 The login endpoint returns a signed session that expires after four hours. The password remains server-side and the browser stores only the temporary token.
 
+Use **+ Section** in the editor to add a section heading and opening paragraph. Section headings receive the same divider and uppercase drop cap as the starter articles, with formatting visible in the editor. Existing H2 headings use this styling automatically.
+
+The publisher accepts a banner image (JPEG, PNG, WebP, or GIF, up to 8 MB) and up to ten additional photos or files (20 MB each). The banner appears in the journal thumbnail and above the article title; additional photos and downloadable files appear below the body. Uploads require an admin session. File contents are saved in `backend/data/uploads` in both article storage modes; set `JOURNAL_UPLOAD_DIR` to a persistent mounted directory in production and include it in backups. Uploaded files are publicly accessible by their generated URLs. Removing a selection from an unpublished draft does not delete its stored upload.
+
+For an existing Supabase project, run `bash scripts/setup_supabase.sh --schema-only` to add the nullable `banner` and default-empty `attachments` columns before running the updated backend. Existing articles remain compatible.
+
+Verify article publishing and uploads with `.venv/Scripts/python.exe -m unittest backend.test_articles`.
+
 ## Supabase article storage
 
 The runtime backend needs two values from **Supabase Dashboard → Settings → API Keys**:

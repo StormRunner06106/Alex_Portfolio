@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getPosts } from "../api";
+import { getPosts, mediaUrl } from "../api";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
 import { ErrorState, LoadingState } from "../components/Status";
@@ -18,9 +18,11 @@ function PostCard({ post, featured }) {
     <article className={`post-card post-card--${post.accent} ${featured ? "post-card--featured" : ""} reveal`}>
       <Link to={`/blog/${post.slug}`} aria-label={`Read ${post.title}`}>
         <div className="post-card__art" aria-hidden="true">
+          {post.banner ? <img className="post-card__image" src={mediaUrl(post.banner)} alt="" loading="lazy" /> : <>
           <span className="art-ring" />
           <span className="art-code">{post.tags[0]}</span>
           <Icon name="spark" size={featured ? 34 : 26} />
+          </>}
         </div>
         <div className="post-card__body">
           <div className="post-meta">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getPost } from "../api";
+import { getPost, mediaUrl } from "../api";
+import { ArticleAttachments } from "../components/ArticleUploads";
 import Icon from "../components/Icon";
 import { RichTextArticle } from "../components/RichTextEditor";
 import { ErrorState, LoadingState } from "../components/Status";
@@ -51,6 +52,7 @@ export default function BlogPostPage() {
   return (
     <article className="article-page">
       <header className={`article-hero article-hero--${post.accent}`}>
+        {post.banner && <img className="article-banner" src={mediaUrl(post.banner)} alt="" />}
         <div className="article-hero__shape" aria-hidden="true"><Icon name="spark" size={50} /></div>
         <div className="article-container reveal">
           <Link className="back-link" to="/blog"><Icon name="arrowLeft" size={17} /> Back to journal</Link>
@@ -74,6 +76,7 @@ export default function BlogPostPage() {
             {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           </section>
         )) : <RichTextArticle content={post.content} />}
+        <ArticleAttachments attachments={post.attachments} />
         <div className="article-end">
           <Icon name="spark" />
           <p>Thanks for reading.</p>

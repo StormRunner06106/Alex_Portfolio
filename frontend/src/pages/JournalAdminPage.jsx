@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createPost, getAdminSession, loginAdmin } from "../api";
+import { createPost, getAdminSession, loginAdmin, uploadMedia } from "../api";
+import ArticleUploads from "../components/ArticleUploads";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
 import RichTextEditor from "../components/RichTextEditor";
@@ -39,6 +40,9 @@ export default function JournalAdminPage() {
   const [post, setPost] = useState(initialPost);
   const [article, setArticle] = useState(emptyDocument);
   const [articleText, setArticleText] = useState("");
+  const [banner, setBanner] = useState(null);
+  const [attachments, setAttachments] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const [customTopic, setCustomTopic] = useState("");
   const [status, setStatus] = useState({ type: "idle", message: "" });
 
@@ -113,6 +117,7 @@ export default function JournalAdminPage() {
 
   async function publish(event) {
     event.preventDefault();
+    if (uploading || status.type === "sending") return;
     if (!post.tags.length) {
       setStatus({ type: "error", message: "Choose at least one topic." });
       return;
@@ -126,6 +131,8 @@ export default function JournalAdminPage() {
       ...post,
       read_time: Number(post.read_time),
       content: article,
+      banner,
+      attachments,
     };
 
     setStatus({ type: "sending", message: "Publishing…" });
@@ -139,6 +146,32 @@ export default function JournalAdminPage() {
         setToken("");
       }
       setStatus({ type: "error", message: error.message });
+    }
+  }
+
+  async function uploadFiles(files, purpose) {
+    if (!files.length || uploading) return;
+    if (purpose === "attachment" && attachments.length + files.length > 10) {
+      setStatus({ type: "error", message: "Choose up to 10 additional files." });
+      return;
+    }
+    const limit = (purpose === "banner" ? 8 : 20) * 1024 * 1024;
+    if (files.some((file) => !file.size || file.size > limit)) {
+      setStatus({ type: "error", message: `Choose non-empty files up to ${limit / 1024 / 1024} MB each.` });
+      return;
+    }
+    setUploading(true);
+    setStatus({ type: "idle", message: "" });
+    try {
+      for (const file of files) {
+        const uploaded = await uploadMedia(file, purpose, token);
+        if (purpose === "banner") setBanner(uploaded);
+        else setAttachments((current) => [...current, uploaded]);
+      }
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -255,12 +288,17 @@ export default function JournalAdminPage() {
 
           <div className="publisher-field publisher-field--wide">
             <span>Article</span>
-            <RichTextEditor onChange={(content, text) => { setArticle(content); setArticleText(text); }} />
+            <RichTextEditor content={article} onChange={(content, text) => { setArticle(content); setArticleText(text); }} />
             <small>{articleText.length} characters · Use headings to break longer pieces into sections.</small>
           </div>
 
+          <p className="section-help">Use + Section to add a heading and a new section. Each section gets a divider and an automatic uppercase drop cap on its opening paragraph.</p>
+          <ArticleUploads banner={banner} attachments={attachments} busy={uploading || status.type === "sending"}
+            onUpload={uploadFiles} onRemoveBanner={() => setBanner(null)}
+            onRemoveAttachment={(url) => setAttachments((current) => current.filter((file) => file.url !== url))} />
+
           <div className="publisher-submit">
-            <button className="button button--primary" disabled={status.type === "sending"} type="submit">
+            <button className="button button--primary" disabled={uploading || status.type === "sending"} type="submit">
               <Icon name="plus" size={18} /> {status.type === "sending" ? "Publishing…" : "Publish article"}
             </button>
             {status.message && <p className={`form-status form-status--${status.type}`} role="status">{status.message}</p>}

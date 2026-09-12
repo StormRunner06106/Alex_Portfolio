@@ -31,10 +31,10 @@ function ToolbarButton({ active = false, children, label, onClick }) {
   );
 }
 
-export default function RichTextEditor({ onChange }) {
+export default function RichTextEditor({ onChange, content = "" }) {
   const editor = useEditor({
     extensions,
-    content: "",
+    content,
     editorProps: { attributes: { "aria-label": "Article body" } },
     onUpdate: ({ editor: currentEditor }) => {
       onChange(currentEditor.getJSON(), currentEditor.getText().trim());
@@ -66,8 +66,22 @@ export default function RichTextEditor({ onChange }) {
           <ToolbarButton active={state?.underline} label="Underline" onClick={() => editor.chain().focus().toggleUnderline().run()}><u>U</u></ToolbarButton>
         </div>
         <div className="editor-tool-group">
-          <ToolbarButton active={state?.heading2} label="Heading" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</ToolbarButton>
+          <ToolbarButton active={state?.heading2} label="Section heading" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>Section heading</ToolbarButton>
           <ToolbarButton active={state?.heading3} label="Subheading" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>H3</ToolbarButton>
+          <ToolbarButton label="Add section" onClick={() => {
+            if (editor.isEmpty) {
+              editor.chain().focus().setContent({ type: "doc", content: [
+                { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Section title" }] },
+                { type: "paragraph" },
+              ] }).setTextSelection({ from: 1, to: 14 }).run();
+              return;
+            }
+            const end = editor.state.doc.content.size;
+            editor.chain().focus().insertContentAt(end, [
+              { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Section title" }] },
+              { type: "paragraph" },
+            ]).setTextSelection({ from: end + 1, to: end + 14 }).run();
+          }}>+ Section</ToolbarButton>
         </div>
         <div className="editor-tool-group">
           <ToolbarButton active={state?.bulletList} label="Bullet list" onClick={() => editor.chain().focus().toggleBulletList().run()}>• List</ToolbarButton>
