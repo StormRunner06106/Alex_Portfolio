@@ -3,20 +3,32 @@ import { useNavigate } from "react-router-dom";
 import { createPost, getAdminSession, loginAdmin } from "../api";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
+import RichTextEditor from "../components/RichTextEditor";
 import { LoadingState } from "../components/Status";
 
 const TOKEN_KEY = "alex-journal-admin";
 const today = new Date().toISOString().slice(0, 10);
+const emptyDocument = { type: "doc", content: [{ type: "paragraph" }] };
+const suggestedTopics = [
+  "AI",
+  "React",
+  "FastAPI",
+  "Supabase",
+  "Python",
+  "Cloud",
+  "DevOps",
+  "Product",
+  "Reliability",
+  "Security",
+];
 
 const initialPost = {
   title: "",
   excerpt: "",
   published_at: today,
   read_time: 5,
-  tags: "AI, Engineering",
+  tags: ["AI"],
   accent: "mint",
-  section_heading: "The idea",
-  body: "",
 };
 
 export default function JournalAdminPage() {
@@ -25,6 +37,9 @@ export default function JournalAdminPage() {
   const [checking, setChecking] = useState(Boolean(token));
   const [password, setPassword] = useState("");
   const [post, setPost] = useState(initialPost);
+  const [article, setArticle] = useState(emptyDocument);
+  const [articleText, setArticleText] = useState("");
+  const [customTopic, setCustomTopic] = useState("");
   const [status, setStatus] = useState({ type: "idle", message: "" });
 
   useEffect(() => {
@@ -72,20 +87,45 @@ export default function JournalAdminPage() {
     setPost((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
 
+  function toggleTopic(topic) {
+    setPost((current) => {
+      if (current.tags.includes(topic)) {
+        return { ...current, tags: current.tags.filter((item) => item !== topic) };
+      }
+      if (current.tags.length >= 6) {
+        setStatus({ type: "error", message: "Choose up to six topics." });
+        return current;
+      }
+      return { ...current, tags: [...current.tags, topic] };
+    });
+  }
+
+  function addCustomTopic() {
+    const topic = customTopic.trim();
+    if (!topic || post.tags.includes(topic)) return;
+    if (post.tags.length >= 6) {
+      setStatus({ type: "error", message: "Choose up to six topics." });
+      return;
+    }
+    setPost((current) => ({ ...current, tags: [...current.tags, topic] }));
+    setCustomTopic("");
+  }
+
   async function publish(event) {
     event.preventDefault();
-    const paragraphs = post.body
-      .split(/\n\s*\n/)
-      .map((paragraph) => paragraph.trim())
-      .filter(Boolean);
+    if (!post.tags.length) {
+      setStatus({ type: "error", message: "Choose at least one topic." });
+      return;
+    }
+    if (articleText.length < 40) {
+      setStatus({ type: "error", message: "Write at least 40 characters before publishing." });
+      return;
+    }
+
     const payload = {
-      title: post.title,
-      excerpt: post.excerpt,
-      published_at: post.published_at,
+      ...post,
       read_time: Number(post.read_time),
-      tags: post.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-      accent: post.accent,
-      content: [{ heading: post.section_heading, paragraphs }],
+      content: article,
     };
 
     setStatus({ type: "sending", message: "Publishing…" });
@@ -107,7 +147,7 @@ export default function JournalAdminPage() {
       <PageHeader
         eyebrow="Journal studio"
         title="Publish a field note."
-        description="A small private writing room for adding new articles to the JSON journal."
+        description="A focused writing room with rich-text editing and Supabase-ready storage."
         aside={token ? <span className="publisher-badge"><span /> Authenticated</span> : null}
       />
 
@@ -145,7 +185,7 @@ export default function JournalAdminPage() {
           <div className="publisher-toolbar">
             <div>
               <p className="eyebrow">New article</p>
-              <p>Paragraphs are separated by a blank line.</p>
+              <p>Write, format, choose the topics, and publish from one clean workspace.</p>
             </div>
             <button className="text-button" onClick={signOut} type="button"><Icon name="logout" size={16} /> Sign out</button>
           </div>
@@ -181,21 +221,43 @@ export default function JournalAdminPage() {
             </label>
           </div>
 
-          <label className="publisher-field publisher-field--wide">
-            <span>Topics</span>
-            <input name="tags" onChange={updatePost} placeholder="AI, React, Systems" required value={post.tags} />
-            <small>Separate up to six topics with commas.</small>
-          </label>
+          <fieldset className="topic-picker">
+            <legend>Topics <span>{post.tags.length}/6 selected</span></legend>
+            <div className="topic-options">
+              {suggestedTopics.map((topic) => (
+                <button
+                  aria-pressed={post.tags.includes(topic)}
+                  className={post.tags.includes(topic) ? "is-active" : ""}
+                  key={topic}
+                  onClick={() => toggleTopic(topic)}
+                  type="button"
+                >
+                  {post.tags.includes(topic) ? "✓ " : "+ "}{topic}
+                </button>
+              ))}
+            </div>
+            <div className="custom-topic">
+              <input
+                maxLength="40"
+                onChange={(event) => setCustomTopic(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    addCustomTopic();
+                  }
+                }}
+                placeholder="Add another topic"
+                value={customTopic}
+              />
+              <button onClick={addCustomTopic} type="button">Add topic</button>
+            </div>
+          </fieldset>
 
-          <label className="publisher-field publisher-field--wide">
-            <span>Section heading</span>
-            <input minLength="3" name="section_heading" onChange={updatePost} required value={post.section_heading} />
-          </label>
-
-          <label className="publisher-field publisher-field--wide">
+          <div className="publisher-field publisher-field--wide">
             <span>Article</span>
-            <textarea minLength="40" name="body" onChange={updatePost} placeholder="Write the article here…" required rows="15" value={post.body} />
-          </label>
+            <RichTextEditor onChange={(content, text) => { setArticle(content); setArticleText(text); }} />
+            <small>{articleText.length} characters · Use headings to break longer pieces into sections.</small>
+          </div>
 
           <div className="publisher-submit">
             <button className="button button--primary" disabled={status.type === "sending"} type="submit">

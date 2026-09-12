@@ -1,4 +1,5 @@
 fastapi
+Pillow
 uvicorn[standard]
 email-validator
-
+supabase==2.31.0

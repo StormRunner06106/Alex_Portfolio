@@ -4,7 +4,7 @@ async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": options.body instanceof File ? "application/octet-stream" : "application/json",
       ...options.headers,
     },
   });
@@ -13,7 +13,7 @@ async function request(path, options = {}) {
     let detail = "Something went wrong. Please try again.";
     try {
       const body = await response.json();
-      detail = body.detail ?? detail;
+      detail = typeof body.detail === "string" ? body.detail : detail;
     } catch {
       // Keep the friendly fallback when a proxy or server returns non-JSON.
     }
@@ -30,6 +30,12 @@ export const getExperience = (signal) => request("/api/experience", { signal });
 export const getSkills = (signal) => request("/api/skills", { signal });
 export const getPosts = (signal) => request("/api/posts", { signal });
 export const getPost = (slug, signal) => request(`/api/posts/${slug}`, { signal });
+export const mediaUrl = (media) => `${API_BASE}${media.url}`;
+export const uploadMedia = (file, purpose, token) => request(`/api/uploads?name=${encodeURIComponent(file.name)}&purpose=${purpose}`, {
+  method: "POST",
+  headers: { Authorization: `Bearer ${token}` },
+  body: file,
+});
 export const loginAdmin = (password) =>
   request("/api/auth/login", {
     method: "POST",

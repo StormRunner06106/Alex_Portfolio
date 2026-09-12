@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getPost } from "../api";
 import Icon from "../components/Icon";
+import { RichTextArticle } from "../components/RichTextEditor";
 import { ErrorState, LoadingState } from "../components/Status";
 
 function formatDate(date) {
@@ -58,20 +59,21 @@ export default function BlogPostPage() {
           </div>
           <h1>{post.title}</h1>
           <p>{post.excerpt}</p>
-          <div className="article-byline">
-            <span className="mini-avatar">AH</span>
-            <span><strong>Alex Herlan</strong><small>{formatDate(post.published_at)} · {post.read_time} min read</small></span>
+          <div className="article-byline article-byline--simple">
+            <Icon name="calendar" size={16} />
+            <span>{formatDate(post.published_at)}</span>
+            <span>{post.read_time} min read</span>
           </div>
         </div>
       </header>
 
       <div className="article-container article-content">
-        {post.content.map((section) => (
+        {Array.isArray(post.content) ? post.content.map((section) => (
           <section key={section.heading}>
             <h2>{section.heading}</h2>
             {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           </section>
-        ))}
+        )) : <RichTextArticle content={post.content} />}
         <div className="article-end">
           <Icon name="spark" />
           <p>Thanks for reading.</p>

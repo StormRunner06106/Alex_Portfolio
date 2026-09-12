@@ -11,10 +11,10 @@ venv/
 # Local configuration
 .env
 backend/.env
+backend/data/uploads/
 
 # Editors and operating systems
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
-

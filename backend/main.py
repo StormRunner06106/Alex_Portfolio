@@ -1,25 +1,29 @@
 from __future__ import annotations
 
-import json
 import hashlib
 import hmac
+import json
 import os
 import re
 import smtplib
 import ssl
 import threading
 import time
+import io
+from uuid import uuid4
 from datetime import date
 from email.message import EmailMessage
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
+from PIL import Image, UnidentifiedImageError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, EmailStr, Field
 from starlette.concurrency import run_in_threadpool
+from supabase import Client, create_client
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -30,12 +34,21 @@ RESUME_PATH = PROJECT_DIR / "Alexander Herlan Resume 2024.pdf"
 POSTS_PATH = DATA_DIR / "posts.json"
 POSTS_LOCK = threading.Lock()
 ADMIN_TOKEN_TTL = 60 * 60 * 4
+UPLOAD_DIR = Path(os.getenv("JOURNAL_UPLOAD_DIR", str(DATA_DIR / "uploads"))).resolve()
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+
+
+class ArticleMedia(BaseModel):
+    url: str = Field(pattern=r"^/api/uploads/[a-f0-9]{32}$")
+    name: str = Field(min_length=1, max_length=200)
+    media_type: str = Field(max_length=100)
+    size: int = Field(gt=0, le=MAX_UPLOAD_BYTES)
 
 
 app = FastAPI(
     title="Alex Herlan Portfolio API",
-    description="JSON-backed content and contact delivery for Alex Herlan's portfolio.",
-    version="1.0.0",
+    description="Supabase-ready content and contact delivery for Alex Herlan's portfolio.",
+    version="1.1.0",
 )
 
 origins = [
@@ -64,11 +77,6 @@ class LoginPayload(BaseModel):
     password: str = Field(min_length=1, max_length=200)
 
 
-class ArticleSection(BaseModel):
-    heading: str = Field(min_length=3, max_length=160)
-    paragraphs: list[str] = Field(min_length=1, max_length=12)
-
-
 class NewPostPayload(BaseModel):
     title: str = Field(min_length=5, max_length=160)
     excerpt: str = Field(min_length=20, max_length=360)
@@ -76,7 +84,9 @@ class NewPostPayload(BaseModel):
     read_time: int = Field(ge=1, le=60)
     tags: list[str] = Field(min_length=1, max_length=6)
     accent: Literal["blue", "lavender", "peach", "yellow", "mint"] = "mint"
-    content: list[ArticleSection] = Field(min_length=1, max_length=8)
+    content: dict[str, Any]
+    banner: ArticleMedia | None = None
+    attachments: list[ArticleMedia] = Field(default_factory=list, max_length=10)
 
 
 @lru_cache(maxsize=8)
@@ -85,6 +95,77 @@ def read_data(filename: str) -> Any:
     if not path.is_file():
         raise HTTPException(status_code=500, detail=f"Missing data file: {filename}")
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+@lru_cache(maxsize=1)
+def get_supabase() -> Client | None:
+    url = os.getenv("SUPABASE_URL", "").strip()
+    key = (
+        os.getenv("SUPABASE_SECRET_KEY", "").strip()
+        or os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    )
+    if not url and not key:
+        return None
+    if not url or not key:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase configuration is incomplete.",
+        )
+    return create_client(url, key)
+
+
+def articles_table() -> str:
+    table = os.getenv("SUPABASE_ARTICLES_TABLE", "articles").strip()
+    if not re.fullmatch(r"[a-z][a-z0-9_]*", table):
+        raise HTTPException(status_code=500, detail="Invalid Supabase table name.")
+    return table
+
+
+def article_records(include_content: bool = True) -> list[dict[str, Any]]:
+    client = get_supabase()
+    if client is None:
+        records = read_data("posts.json")
+        if include_content:
+            return records
+        return [
+            {key: value for key, value in post.items() if key != "content"}
+            for post in records
+        ]
+
+    columns = "slug,title,excerpt,published_at,read_time,tags,accent,banner,attachments"
+    if include_content:
+        columns += ",content"
+    try:
+        response = (
+            client.table(articles_table())
+            .select(columns)
+            .order("published_at", desc=True)
+            .execute()
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="The journal store is temporarily unavailable.",
+        ) from exc
+    return response.data or []
+
+
+def tiptap_plain_text(document: dict[str, Any]) -> str:
+    fragments: list[str] = []
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            text = node.get("text")
+            if isinstance(text, str):
+                fragments.append(text)
+            for child in node.get("content", []):
+                walk(child)
+        elif isinstance(node, list):
+            for child in node:
+                walk(child)
+
+    walk(document)
+    return " ".join(fragments).strip()
 
 
 def journal_credentials() -> tuple[str, str]:
@@ -147,7 +228,10 @@ def post_slug(title: str) -> str:
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "articles": "supabase" if get_supabase() is not None else "json-fallback",
+    }
 
 
 @app.get("/api/profile")
@@ -192,7 +276,7 @@ def posts(
     q: str | None = Query(default=None, max_length=100),
     tag: str | None = Query(default=None, max_length=50),
 ) -> list[dict[str, Any]]:
-    all_posts = read_data("posts.json")
+    all_posts = article_records(include_content=False)
     query = q.casefold().strip() if q else None
     requested_tag = tag.casefold().strip() if tag else None
 
@@ -212,6 +296,59 @@ def posts(
     return sorted(filtered, key=lambda item: item["published_at"], reverse=True)
 
 
+def uploaded_media(upload_id: str) -> dict[str, Any]:
+    if not re.fullmatch(r"[a-f0-9]{32}", upload_id):
+        raise HTTPException(status_code=404, detail="File not found.")
+    metadata = UPLOAD_DIR / f"{upload_id}.json"
+    if not metadata.is_file() or not (UPLOAD_DIR / upload_id).is_file():
+        raise HTTPException(status_code=404, detail="File not found.")
+    return json.loads(metadata.read_text(encoding="utf-8"))
+
+
+@app.post("/api/uploads", status_code=201)
+async def upload_media(
+    request: Request,
+    name: str = Query(min_length=1, max_length=200),
+    purpose: Literal["banner", "attachment"] = "attachment",
+    _: None = Depends(require_admin),
+) -> dict[str, Any]:
+    limit = 8 * 1024 * 1024 if purpose == "banner" else MAX_UPLOAD_BYTES
+    data = bytearray()
+    async for chunk in request.stream():
+        data.extend(chunk)
+        if len(data) > limit:
+            raise HTTPException(status_code=413, detail=f"Choose a file smaller than {limit // (1024 * 1024)} MB.")
+    if not data:
+        raise HTTPException(status_code=422, detail="The selected file is empty.")
+    media_type = "application/octet-stream"
+    try:
+        with Image.open(io.BytesIO(data)) as photo:
+            photo.verify()
+            media_type = {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp", "GIF": "image/gif"}.get(photo.format, media_type)
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
+        pass
+    if purpose == "banner" and not media_type.startswith("image/"):
+        raise HTTPException(status_code=422, detail="Choose a valid JPEG, PNG, WebP, or GIF banner.")
+    upload_id = uuid4().hex
+    metadata = {"url": f"/api/uploads/{upload_id}", "name": name.replace("\\", "/").split("/")[-1] or "attachment", "media_type": media_type, "size": len(data)}
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    (UPLOAD_DIR / upload_id).write_bytes(data)
+    (UPLOAD_DIR / f"{upload_id}.json").write_text(json.dumps(metadata), encoding="utf-8")
+    return metadata
+
+
+@app.get("/api/uploads/{upload_id}")
+def download_media(upload_id: str) -> FileResponse:
+    media = uploaded_media(upload_id)
+    return FileResponse(
+        UPLOAD_DIR / upload_id,
+        media_type=media["media_type"],
+        filename=media["name"],
+        content_disposition_type="inline" if media["media_type"].startswith("image/") else "attachment",
+        headers={"X-Content-Type-Options": "nosniff"},
+    )
+
+
 @app.post("/api/posts", status_code=status.HTTP_201_CREATED)
 def create_post(
     payload: NewPostPayload, _: None = Depends(require_admin)
@@ -226,6 +363,43 @@ def create_post(
     article = payload.model_dump(mode="json")
     article["slug"] = slug
     article["tags"] = clean_tags
+    for media in [article["banner"], *article["attachments"]]:
+        if media is not None and uploaded_media(media["url"].rsplit("/", 1)[-1]) != media:
+            raise HTTPException(status_code=422, detail="An attachment is invalid. Please upload it again.")
+    if article["banner"] and not article["banner"]["media_type"].startswith("image/"):
+        raise HTTPException(status_code=422, detail="The banner must be an image.")
+
+    if article["content"].get("type") != "doc" or len(tiptap_plain_text(article["content"])) < 40:
+        raise HTTPException(status_code=422, detail="The article body is too short.")
+    if len(json.dumps(article["content"], ensure_ascii=False)) > 250_000:
+        raise HTTPException(status_code=422, detail="The formatted article is too large.")
+
+    client = get_supabase()
+    if client is not None:
+        try:
+            existing = (
+                client.table(articles_table())
+                .select("slug")
+                .eq("slug", slug)
+                .limit(1)
+                .execute()
+            )
+            if existing.data:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="A journal post with this title already exists.",
+                )
+            created = client.table(articles_table()).insert(article).execute()
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="The article could not be saved to Supabase.",
+            ) from exc
+        if not created.data:
+            raise HTTPException(status_code=502, detail="Supabase did not return the new article.")
+        return created.data[0]
 
     with POSTS_LOCK:
         current_posts = json.loads(POSTS_PATH.read_text(encoding="utf-8"))
@@ -250,7 +424,27 @@ def create_post(
 def post_by_slug(slug: str) -> dict[str, Any]:
     if not re.fullmatch(r"[a-z0-9-]+", slug):
         raise HTTPException(status_code=404, detail="Post not found")
-    for post in read_data("posts.json"):
+
+    client = get_supabase()
+    if client is not None:
+        try:
+            response = (
+                client.table(articles_table())
+                .select("slug,title,excerpt,published_at,read_time,tags,accent,content,banner,attachments")
+                .eq("slug", slug)
+                .limit(1)
+                .execute()
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="The journal store is temporarily unavailable.",
+            ) from exc
+        if response.data:
+            return response.data[0]
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    for post in article_records():
         if post["slug"] == slug:
             return post
     raise HTTPException(status_code=404, detail="Post not found")

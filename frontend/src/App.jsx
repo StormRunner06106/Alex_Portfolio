@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { getProfile } from "./api";
 import Layout from "./components/Layout";
 import AboutPage from "./pages/AboutPage";
 import BlogPage from "./pages/BlogPage";
-import BlogPostPage from "./pages/BlogPostPage";
 import ContactPage from "./pages/ContactPage";
 import ExperiencePage from "./pages/ExperiencePage";
-import JournalAdminPage from "./pages/JournalAdminPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import SkillsPage from "./pages/SkillsPage";
+import { LoadingState } from "./components/Status";
+
+const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
+const JournalAdminPage = lazy(() => import("./pages/JournalAdminPage"));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -38,22 +40,24 @@ export default function App() {
   return (
     <Layout profile={profile}>
       <ScrollToTop />
-      <Routes>
-        <Route
-          path="/"
-          element={<AboutPage error={profileError} profile={profile} />}
-        />
-        <Route path="/experience" element={<ExperiencePage />} />
-        <Route path="/skills" element={<SkillsPage />} />
-        <Route path="/blog" element={<BlogPage />} />
-        <Route path="/blog/manage" element={<JournalAdminPage />} />
-        <Route path="/blog/:slug" element={<BlogPostPage />} />
-        <Route
-          path="/contact"
-          element={<ContactPage error={profileError} profile={profile} />}
-        />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+      <Suspense fallback={<div className="container content-page"><LoadingState label="Opening page" /></div>}>
+        <Routes>
+          <Route
+            path="/"
+            element={<AboutPage error={profileError} profile={profile} />}
+          />
+          <Route path="/experience" element={<ExperiencePage />} />
+          <Route path="/skills" element={<SkillsPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/manage" element={<JournalAdminPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route
+            path="/contact"
+            element={<ContactPage error={profileError} profile={profile} />}
+          />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </Layout>
   );
 }
