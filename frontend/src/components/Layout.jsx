@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import Icon from "./Icon";
 import { useAdmin } from "./AdminSession";
+import ThemeToggle from "./ThemeToggle";
 
 const navItems = [
   { label: "About", to: "/" },
@@ -55,6 +56,7 @@ function Header({ name }) {
         </button>
         </div>
         </div>
+        <ThemeToggle />
         <button type="button" className={`icon-button header-signin ${isAdmin ? "is-admin" : ""}`}
           aria-label={isAdmin ? "Admin account" : "Admin sign in"} title={isAdmin ? "Admin account" : "Admin sign in"}
           aria-haspopup="dialog" disabled={checking} onClick={openSignIn}>

@@ -4,6 +4,8 @@ import Icon from "./Icon";
 import AttachmentList from "./AttachmentList";
 
 const imageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const maxUploadMB = Number(import.meta.env.VITE_MAX_UPLOAD_MB ?? 20);
+const uploadLimitMB = (purpose) => Math.min(purpose === "banner" ? 8 : 20, maxUploadMB);
 const isImage = (file) => imageTypes.includes(file.type) || (!file.type && /\.(jpe?g|png|webp|gif)$/i.test(file.name));
 const fileSize = (size) => size < 1024 * 1024 ? `${Math.max(1, Math.round(size / 1024))} KB` : `${(size / 1024 / 1024).toFixed(1)} MB`;
 
@@ -27,7 +29,7 @@ function Dropzone({ purpose, disabled, onFiles, hasBanner }) {
     <button type="button" className="upload-browse" disabled={disabled} aria-describedby={hintId} onClick={() => input.current.click()}>
       <Icon name="plus" size={16} /> {banner ? hasBanner ? "Replace banner" : "Choose banner" : "Browse files"}
     </button>
-    <small id={hintId}>{banner ? "JPG, PNG, WebP or GIF · Up to 8 MB" : "Up to 10 files · 20 MB each"}</small>
+    <small id={hintId}>{banner ? `JPG, PNG, WebP or GIF · Up to ${uploadLimitMB(purpose)} MB` : `Up to 10 files · ${uploadLimitMB(purpose)} MB each`}</small>
     <input ref={input} className="upload-input" type="file" tabIndex={-1}
       aria-label={banner ? "Banner image" : "Additional photos & files"}
       accept={banner ? "image/jpeg,image/png,image/webp,image/gif" : undefined}
@@ -106,9 +108,9 @@ export default function ArticleUploads({ banner, attachments, busy, title, subti
     const additions = [];
     const existing = [...attachments, ...queue.current.filter((task) => task.purpose === "attachment").map((task) => task.file)];
     for (const file of files) {
-      const limit = (purpose === "banner" ? 8 : 20) * 1024 * 1024;
+      const limit = uploadLimitMB(purpose) * 1024 * 1024;
       if (!file.size) { errors.push(`${file.name}: this file is empty.`); continue; }
-      if (file.size > limit) { errors.push(`${file.name}: exceeds the ${purpose === "banner" ? 8 : 20} MB limit.`); continue; }
+      if (file.size > limit) { errors.push(`${file.name}: exceeds the ${uploadLimitMB(purpose)} MB limit.`); continue; }
       if (purpose === "banner" && !isImage(file)) { errors.push(`${file.name}: choose a JPG, PNG, WebP, or GIF image.`); continue; }
       if (purpose === "attachment" && existing.some((item) => item.name === file.name && item.size === file.size)) {
         errors.push(`${file.name}: already added.`); continue;

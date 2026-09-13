@@ -1,0 +1,20 @@
+.git
+.venv
+venv
+**/__pycache__
+**/*.pyc
+**/node_modules
+frontend/dist
+**/.env
+**/.env.*
+backend/data/uploads
+scripts
+backend/test_*.py
+backend/supabase
+backend/seed_*.py
+backend/connect_dropbox.py
+backend/migrate_media_dropbox.py
+resumes/*
+!resumes/resume-v5.pdf
+Alexander Herlan Resume 2024.md
+Alexander Herlan Resume 2024.pdf

@@ -1,0 +1,93 @@
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #e4eee8;
+  --ink-soft: #bccac2;
+  --ink-faint: #a0b0a7;
+  --line: rgba(188, 211, 197, 0.18);
+  --paper: #141d19;
+  --surface-rgb: 35, 48, 41;
+  --surface: rgba(var(--surface-rgb), 0.92);
+  --surface-solid: #233029;
+  --sage: #293e33;
+  --sage-deep: #a4d4b8;
+  --accent-fill: #345d48;
+  --accent-fill-hover: #416e56;
+  --blue: #263640;
+  --blue-deep: #aacde3;
+  --lavender: #342f42;
+  --lavender-deep: #c8bce6;
+  --peach: #41322c;
+  --peach-deep: #e2baa6;
+  --yellow: #3b3827;
+  --yellow-deep: #d9cc99;
+  --mint: #263e33;
+  --glow-mint: rgba(48, 89, 64, 0.22);
+  --glow-lavender: rgba(69, 53, 94, 0.18);
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
+  --shadow-soft: 0 14px 38px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme="dark"] ::selection { background: #385745; }
+:root[data-theme="dark"] .about-copy h2,
+:root[data-theme="dark"] .article-content section p,
+:root[data-theme="dark"] .rich-editor .tiptap,
+:root[data-theme="dark"] .rich-article .tiptap { color: var(--ink-soft); }
+
+:root[data-theme="dark"] .portrait-frame { border-color: var(--surface-solid); }
+:root[data-theme="dark"] .portrait-orbit,
+:root[data-theme="dark"] .portrait-orbit--two,
+:root[data-theme="dark"] .experience-note,
+:root[data-theme="dark"] .availability-note,
+:root[data-theme="dark"] .tag-row span,
+:root[data-theme="dark"] .skill-tags span,
+:root[data-theme="dark"] .mini-tags span,
+:root[data-theme="dark"] .article-tags span,
+:root[data-theme="dark"] .article-hero { border-color: var(--line); }
+:root[data-theme="dark"] .skill-dot { border-color: var(--ink-soft); }
+:root[data-theme="dark"] .skill-orbit { box-shadow: 0 0 0 12px var(--mint); }
+:root[data-theme="dark"] .expand-button,
+:root[data-theme="dark"] .project-links a,
+:root[data-theme="dark"] .topic-options button,
+:root[data-theme="dark"] .topic-picker kbd,
+:root[data-theme="dark"] .rich-editor__toolbar { background: var(--paper); }
+:root[data-theme="dark"] .read-arrow,
+:root[data-theme="dark"] .upload-dropzone__icon { background: var(--mint); }
+:root[data-theme="dark"] .topic-options button.is-active,
+:root[data-theme="dark"] .post-card:hover .read-arrow { background: var(--accent-fill); }
+:root[data-theme="dark"] .topic-options .topic-chip__remove { background: transparent; }
+
+:root[data-theme="dark"] .contact-form input,
+:root[data-theme="dark"] .contact-form textarea,
+:root[data-theme="dark"] .publisher-login input,
+:root[data-theme="dark"] .publisher-field input,
+:root[data-theme="dark"] .publisher-field textarea,
+:root[data-theme="dark"] .publisher-field select,
+:root[data-theme="dark"] .custom-topic input,
+:root[data-theme="dark"] .rich-editor {
+  background: var(--paper);
+  border-color: var(--line);
+}
+:root[data-theme="dark"] :is(input, textarea, select):focus,
+:root[data-theme="dark"] .rich-editor:focus-within,
+:root[data-theme="dark"] .search-box:focus-within { border-color: var(--sage-deep); }
+:root[data-theme="dark"] :is(input, textarea)::placeholder,
+:root[data-theme="dark"] .rich-editor .tiptap p.is-editor-empty:first-child::before { color: var(--ink-faint); }
+
+:root[data-theme="dark"] .culture-card { background: linear-gradient(145deg, var(--lavender), #262631); }
+:root[data-theme="dark"] .culture-link--spotify { background: #284334; }
+:root[data-theme="dark"] .culture-link--instagram { background: #44303c; }
+:root[data-theme="dark"] .culture-link--steam { background: #293b49; }
+:root[data-theme="dark"] .publisher-badge,
+:root[data-theme="dark"] .form-status--success { color: var(--sage-deep); }
+:root[data-theme="dark"] .state-card--error,
+:root[data-theme="dark"] .upload-feedback,
+:root[data-theme="dark"] .upload-list .has-error { background: #3c2825; border-color: #7b5148; color: #f2b7a7; }
+:root[data-theme="dark"] .form-status--error,
+:root[data-theme="dark"] .social-error,
+:root[data-theme="dark"] .upload-file-info p,
+:root[data-theme="dark"] .text-button--danger { color: #f2b7a7; }
+:root[data-theme="dark"] .upload-dropzone { border-color: #668979; background: linear-gradient(135deg, #253a2e, #1c2c23); }
+:root[data-theme="dark"] .upload-dropzone.is-dragging,
+:root[data-theme="dark"] .upload-list .upload-sortable.is-sorting { background: var(--mint); }
+
+.theme-toggle { color: var(--sage-deep); }

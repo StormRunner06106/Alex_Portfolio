@@ -22,7 +22,7 @@ from typing import Any, Literal
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
 from PIL import Image, UnidentifiedImageError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from pydantic import BaseModel, EmailStr, Field
 from starlette.concurrency import run_in_threadpool
 from httpx import TransportError
@@ -42,6 +42,10 @@ ADMIN_TOKEN_TTL = 60 * 60 * 4
 UPLOAD_DIR = Path(os.getenv("JOURNAL_UPLOAD_DIR", str(DATA_DIR / "uploads"))).resolve()
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 logger = logging.getLogger("uvicorn.error")
+
+
+def on_vercel() -> bool:
+    return os.getenv("VERCEL") == "1"
 
 
 class ArticleMedia(BaseModel):
@@ -193,6 +197,8 @@ def tiptap_plain_text(document: dict[str, Any]) -> str:
 
 
 def journal_credentials() -> tuple[str, str]:
+    if on_vercel() and get_supabase() is None:
+        raise HTTPException(503, "Configure Supabase before publishing on Vercel.")
     password = os.getenv("JOURNAL_ADMIN_PASSWORD", "")
     token_secret = os.getenv("JOURNAL_TOKEN_SECRET", "")
     if not password or not token_secret:
@@ -256,6 +262,15 @@ def health() -> dict[str, str]:
         "status": "ok",
         "articles": "supabase" if get_supabase() is not None else "json-fallback",
     }
+
+
+@app.get("/api/cron/media-cleanup", include_in_schema=False)
+def scheduled_media_cleanup(authorization: str | None = Header(default=None)):
+    secret = os.getenv("CRON_SECRET", "")
+    if not secret or not hmac.compare_digest(authorization or "", f"Bearer {secret}"):
+        raise HTTPException(401, "Unauthorized")
+    media_cleanup.cleanup_pending()
+    return {"status": "completed"}
 
 
 @app.get("/api/profile")
@@ -344,6 +359,8 @@ def save_media_metadata(upload_id: str, metadata: dict[str, Any]) -> None:
 
 def store_upload(data: bytes, upload_id: str, metadata: dict[str, Any]) -> dict[str, Any]:
     storage = os.getenv("JOURNAL_MEDIA_STORAGE", "dropbox").strip().lower()
+    if on_vercel() and (storage != "dropbox" or get_supabase() is None):
+        raise HTTPException(503, "Vercel uploads require Dropbox and Supabase storage.")
     if storage == "dropbox":
         metadata = {**metadata, "storage": "dropbox", "dropbox_file_id": dropbox_storage.upload(data, upload_id, metadata["name"])}
         save_media_metadata(upload_id, metadata)
@@ -364,6 +381,8 @@ async def upload_media(
     _: None = Depends(require_admin),
 ) -> dict[str, Any]:
     limit = 8 * 1024 * 1024 if purpose == "banner" else MAX_UPLOAD_BYTES
+    if on_vercel():
+        limit = min(limit, 4 * 1024 * 1024)
     data = bytearray()
     async for chunk in request.stream():
         data.extend(chunk)
@@ -389,6 +408,9 @@ async def upload_media(
 def download_media(upload_id: str):
     media = uploaded_media(upload_id)
     if media.get("storage") == "dropbox":
+        if on_vercel() and media["size"] > 4 * 1024 * 1024:
+            return RedirectResponse(dropbox_storage.temporary_link(media["dropbox_file_id"]),
+                                    status_code=307, headers={"Cache-Control": "no-store"})
         data = dropbox_storage.download(media["dropbox_file_id"], MAX_UPLOAD_BYTES)
         disposition = "inline" if media["media_type"].startswith("image/") else "attachment"
         return Response(data, media_type=media["media_type"], headers={
@@ -656,7 +678,7 @@ async def contact(payload: ContactPayload) -> dict[str, str]:
     return {"status": "accepted", "message": "Thanks — your note is on its way."}
 
 
-if FRONTEND_DIST.is_dir():
+if FRONTEND_DIST.is_dir() and not on_vercel():
 
     @app.get("/{path:path}", include_in_schema=False)
     def frontend(path: str) -> FileResponse:

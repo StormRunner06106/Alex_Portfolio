@@ -12,9 +12,14 @@ venv/
 .env
 backend/.env
 backend/data/uploads/
+.vercel/
+node_modules/
 
 # Editors and operating systems
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
+
+.vercel
+.env*

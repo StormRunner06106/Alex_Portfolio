@@ -1,7 +1,1 @@
-fastapi
-httpx
-dropbox==12.2.1
-Pillow
-uvicorn[standard]
-email-validator
-supabase==2.31.0
+-r ../requirements.txt

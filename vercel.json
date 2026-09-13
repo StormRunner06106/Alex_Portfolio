@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci --prefix frontend",
+  "buildCommand": "npm run build --prefix frontend",
+  "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60,
+      "includeFiles": "{backend/**,resumes/resume-v5.pdf}",
+      "excludeFiles": "{frontend/**,node_modules/**,.venv/**,scripts/**,backend/test_*.py,backend/.env*,backend/data/uploads/**}"
+    }
+  },
+  "routes": [
+    { "src": "/api(?:/.*)?", "dest": "/api/index.py" },
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/cron/media-cleanup", "schedule": "0 10 * * *" }
+  ]
+}

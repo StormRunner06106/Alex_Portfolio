@@ -130,6 +130,12 @@ def cleanup_pending():
 
 @asynccontextmanager
 async def lifespan(app):
+    from backend import main
+    if main.on_vercel():
+        # Serverless instances can stop between requests. Cron retries the
+        # durable queue; article mutations still attempt cleanup immediately.
+        yield
+        return
     async def retry():
         while True:
             await run_in_threadpool(cleanup_pending)

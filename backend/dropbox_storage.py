@@ -40,6 +40,16 @@ def upload(data: bytes, upload_id: str, name: str) -> str:
         raise HTTPException(502, "Dropbox could not store this file. Please retry.") from exc
 
 
+def temporary_link(file_id: str) -> str:
+    """Serve existing large files directly, outside the function payload limit."""
+    try:
+        return get_dropbox().files_get_temporary_link(file_id).link
+    except AuthError as exc:
+        raise HTTPException(503, "Dropbox needs to be reconnected by the site owner.") from exc
+    except (DropboxException, RequestException) as exc:
+        raise HTTPException(502, "This file is temporarily unavailable from Dropbox. Please retry.") from exc
+
+
 def download(file_id: str, limit: int) -> bytes:
     try:
         metadata, response = get_dropbox().files_download(file_id)

@@ -51,6 +51,8 @@ For content updates, edit the Markdown first and rerun the generator to create a
 
 ## Run locally
 
+The sun/moon control between the navigation and admin account button switches the entire website between light and dark themes. It follows the device preference until a visitor selects a mode, then saves that choice locally and synchronizes it across tabs. The theme applies before rendering, remains selected after sign-out, and also covers forms and admin dialogs. After building the frontend, run `.venv/Scripts/python.exe -m scripts.test_theme` for isolated browser checks of persistence, device preferences, keyboard interaction, mobile header layout, and unavailable browser storage (requires Playwright and Microsoft Edge).
+
 Create and install the Python environment from the repository root:
 
 ```powershell
@@ -185,6 +187,80 @@ The access token must be project-scoped with **Database: Read-write** permission
 Edit the files in `backend/data` to update profile, career, and skill content. The health endpoint reports `articles: supabase` when the remote journal store is connected and `articles: json-fallback` otherwise.
 
 ## Production build
+
+### Vercel: React and FastAPI in one project
+
+Production: **https://alex-herlan-portfolio.vercel.app**
+
+Vercel project: `storm-runners-projects/alex-herlan-portfolio`. Production
+Supabase, Dropbox, admin, and cron secrets are configured. SMTP is not yet
+configured. Deploy updates from this directory with `npx.cmd vercel --prod`.
+Automatic GitHub deployments need a GitHub login connection in Vercel followed
+by `npx.cmd vercel git connect` for `StormRunner06106/Alex_Portfolio`.
+
+Deploy from the **repository root**, not `frontend/` or `backend/`. The checked-in
+`vercel.json` builds React into `frontend/dist`, serves static files from Vercel's
+CDN, routes `/api/*` to `api/index.py`, and handles React deep links with
+`index.html`. Python 3.12 and Node.js 24 are selected in the root configuration.
+Leave `VITE_API_BASE_URL` unset so browser requests use the same origin.
+
+From a PowerShell terminal:
+
+```powershell
+npx.cmd vercel login
+npx.cmd vercel link
+```
+
+Choose the desired account/team, create or select the portfolio project, and use
+`.` as its root directory. Keep the framework preset as **Other**; the build,
+install, output, and routing settings are already in `vercel.json`.
+
+Before deployment, add these **server-only** environment variables to the Vercel
+project's Production environment (and Preview if preview deployments need them).
+Use the configured values from your local `backend/.env`; do not upload that file
+or prefix secrets with `VITE_`.
+
+| Variables | Purpose |
+| --- | --- |
+| `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_ARTICLES_TABLE` | Persistent content and media registry |
+| `JOURNAL_ADMIN_PASSWORD`, `JOURNAL_TOKEN_SECRET` | Admin login and session signing |
+| `JOURNAL_MEDIA_STORAGE=dropbox` | Durable uploaded files |
+| `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`, `DROPBOX_REFRESH_TOKEN` | Dropbox connection |
+| `CRON_SECRET` | A separate random secret of at least 32 characters for scheduled cleanup |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL`, `SMTP_USE_TLS`, `SMTP_USE_SSL`, `CONTACT_TO_EMAIL` | Contact email delivery; omitted SMTP settings leave the form unavailable |
+
+The CLI also accepts each value interactively, for example
+`npx.cmd vercel env add SUPABASE_SECRET_KEY production`. Management credentials
+such as `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF` are not runtime
+requirements and should remain local. The Supabase schema and portfolio seed
+must already be applied as described above; deployment does not overwrite data.
+Use separate storage and credentials for previews if preview edits should not
+affect production content.
+
+```powershell
+npx.cmd vercel --prod
+```
+
+After deployment, check `/`, a direct link such as `/experience`,
+`/api/health`, `/api/posts`, and `/api/resume`. Check admin sign-in and upload a
+small file before publishing new content. The project retains the selected
+`resumes/resume-v5.pdf`; local secrets, upload backups, and draft resumes are
+excluded from deployment by `.vercelignore`.
+
+Vercel uploads are limited to **4 MB per file** in both the UI and API, below
+[Vercel's 4.5 MB function payload limit](https://vercel.com/docs/functions/limitations#request-body-size).
+Previously stored larger Dropbox files download through short-lived redirects.
+Local development retains its 8 MB banner and 20 MB attachment limits. Publishing
+on Vercel requires Supabase, and uploads require Dropbox; the local filesystem
+fallback is for development. Failed media deletions stay in Supabase and are
+retried after article writes and by the daily production cron job (10:00 UTC).
+Set `CRON_SECRET` before enabling that job. Serverless instances do not start
+the continuous cleanup loop used by the local server.
+
+References: [Python functions](https://vercel.com/docs/functions/runtimes/python/api-directory)
+and [Vercel configuration](https://vercel.com/docs/project-configuration/vercel-json).
+
+### Conventional server
 
 ```powershell
 cd frontend
