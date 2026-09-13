@@ -27,7 +27,7 @@ from pydantic import BaseModel, EmailStr, Field
 from starlette.concurrency import run_in_threadpool
 from httpx import TransportError
 from supabase import Client, ClientOptions, PostgrestAPIError, create_client
-from backend import dropbox_storage, media_cleanup, portfolio_content
+from backend import dropbox_storage, media_cleanup, media_registry, portfolio_content
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -333,9 +333,7 @@ def save_media_metadata(upload_id: str, metadata: dict[str, Any]) -> None:
     client = get_supabase()
     if client is not None:
         try:
-            result = client.table("article_media").upsert({"upload_id": upload_id, "metadata": metadata}).execute()
-            if not result.data:
-                raise RuntimeError("Media record was not returned.")
+            media_registry.upsert(client, "article_media", [{"upload_id": upload_id, "metadata": metadata}])
         except Exception as exc:
             raise HTTPException(502, "The file uploaded, but its record could not be saved. Please retry.") from exc
     else:

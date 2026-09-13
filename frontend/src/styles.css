@@ -128,10 +128,11 @@ button {
 }
 
 .site-header {
+  --header-top: 22px;
   position: relative;
   z-index: 50;
   flex: 0 0 auto;
-  padding-block: 22px 10px;
+  padding-block: var(--header-top) 10px;
 }
 
 .header-inner {
@@ -177,6 +178,12 @@ button {
   box-shadow: 0 8px 28px rgba(46, 65, 58, 0.05);
   backdrop-filter: blur(18px);
 }
+
+/* Only navigation is pinned. Identity and account controls stay in normal flow. */
+.nav-positioner { position: fixed; top: var(--header-top); inset-inline: 0; pointer-events: none; }
+.nav-positioner__inner { position: relative; display: flex; align-items: center; justify-content: flex-end; min-height: 58px; padding-right: 56px; }
+.nav-positioner .nav-shell, .nav-positioner .menu-button { pointer-events: auto; }
+@media (min-width: 721px) and (max-width: 900px) { .brand-name { display: none; } }
 
 .nav-link {
   padding: 10px 15px;
@@ -2383,8 +2390,12 @@ button {
   }
 
   .site-header {
+    --header-top: 14px;
     padding-top: 14px;
   }
+
+  .nav-positioner__inner { padding-right: 0; }
+  .site-header .header-actions { padding-right: 56px; }
 
   .header-inner {
     position: relative;
@@ -2707,6 +2718,7 @@ button {
 
 @media (max-height: 770px) and (min-width: 901px) {
   .site-header {
+    --header-top: 14px;
     padding-top: 14px;
   }
 

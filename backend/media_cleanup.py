@@ -9,6 +9,7 @@ from threading import RLock
 
 from fastapi import HTTPException
 from starlette.concurrency import run_in_threadpool
+from backend import media_registry
 
 LOCK = RLock()
 TABLE = "article_media_deletions"
@@ -62,9 +63,7 @@ def enqueue(media):
     client = main.get_supabase()
     try:
         if client is not None:
-            result = client.table(TABLE).upsert(list(records.values())).execute()
-            if not result.data:
-                raise RuntimeError("Removal queue was not saved")
+            media_registry.upsert(client, TABLE, list(records.values()))
         else:
             save_local_queue(list({**{r["upload_id"]: r for r in pending()}, **records}.values()))
     except Exception as exc:

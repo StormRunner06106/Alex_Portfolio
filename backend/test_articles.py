@@ -216,13 +216,14 @@ class ArticleMediaTests(unittest.TestCase):
         client.table.side_effect = lambda name: media_table if name == "article_media" else article_table
         metadata = {"url": "/api/uploads/" + "a" * 32, "name": "image.png", "size": 10,
                     "media_type": "image/png", "storage": "dropbox", "dropbox_file_id": "id:remote_photo"}
+        media_table.upsert.return_value.retry.return_value.execute.return_value.data = [{"upload_id": "a" * 32, "metadata": metadata}]
         media_query = media_table.select.return_value.eq.return_value.limit.return_value
         media_query.retry.return_value.execute.return_value.data = [{"metadata": metadata}]
         article_table.select.return_value.eq.return_value.limit.return_value.execute.return_value.data = []
         article_table.insert.side_effect = lambda record: MagicMock(execute=lambda: MagicMock(data=[record]))
         with patch.object(main, "get_supabase", return_value=client):
             main.save_media_metadata("a" * 32, metadata)
-            media_table.upsert.assert_called_once_with({"upload_id": "a" * 32, "metadata": metadata})
+            media_table.upsert.assert_called_once_with([{"upload_id": "a" * 32, "metadata": metadata}], on_conflict="upload_id")
             self.assertEqual(main.uploaded_media("a" * 32), metadata)
             self.assertFalse(main.UPLOAD_DIR.exists())
             result = self.client.post("/api/posts", headers=self.headers, json={**self.article_payload(), "banner": metadata})

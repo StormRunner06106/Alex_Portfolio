@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import Icon from "./Icon";
 import { useAdmin } from "./AdminSession";
@@ -14,6 +14,7 @@ const navItems = [
 function Header({ name }) {
   const { isAdmin, checking, openSignIn } = useAdmin();
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigationId = useId();
   const location = useLocation();
 
   useEffect(() => setMenuOpen(false), [location.pathname]);
@@ -27,7 +28,9 @@ function Header({ name }) {
         </NavLink>
 
         <div className="header-actions">
-        <nav className={`nav-shell ${menuOpen ? "is-open" : ""}`} aria-label="Main navigation">
+        <div className="nav-positioner">
+        <div className="container nav-positioner__inner">
+        <nav id={navigationId} className={`nav-shell ${menuOpen ? "is-open" : ""}`} aria-label="Main navigation">
           {navItems.map((item) => (
             <NavLink
               className={({ isActive }) => `nav-link ${isActive ? "is-active" : ""}`}
@@ -40,21 +43,23 @@ function Header({ name }) {
           ))}
         </nav>
 
-        <button type="button" className={`icon-button header-signin ${isAdmin ? "is-admin" : ""}`}
-          aria-label={isAdmin ? "Admin account" : "Admin sign in"} title={isAdmin ? "Admin account" : "Admin sign in"}
-          aria-haspopup="dialog" disabled={checking} onClick={openSignIn}>
-          <Icon name={isAdmin ? "user" : "lock"} />
-          {isAdmin && <span className="admin-indicator" />}
-        </button>
-
         <button
           aria-expanded={menuOpen}
+          aria-controls={navigationId}
           aria-label={menuOpen ? "Close navigation" : "Open navigation"}
           className="menu-button"
           onClick={() => setMenuOpen((open) => !open)}
           type="button"
         >
           <Icon name={menuOpen ? "close" : "menu"} />
+        </button>
+        </div>
+        </div>
+        <button type="button" className={`icon-button header-signin ${isAdmin ? "is-admin" : ""}`}
+          aria-label={isAdmin ? "Admin account" : "Admin sign in"} title={isAdmin ? "Admin account" : "Admin sign in"}
+          aria-haspopup="dialog" disabled={checking} onClick={openSignIn}>
+          <Icon name={isAdmin ? "user" : "lock"} />
+          {isAdmin && <span className="admin-indicator" />}
         </button>
         </div>
       </div>
