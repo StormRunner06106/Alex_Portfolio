@@ -25,7 +25,7 @@ function Header({ name }) {
       <div className="container header-inner">
         <NavLink className="brand" to="/" aria-label={`${name} home`}>
           <img className="brand-mark brand-photo" src="/alex-avatar-96.webp" width="42" height="42" alt="" />
-          <span className="brand-name">{name}</span>
+          <span className="brand-name">{name} test</span>
         </NavLink>
 
         <div className="header-actions">
