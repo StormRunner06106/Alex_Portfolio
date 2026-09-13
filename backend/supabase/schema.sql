@@ -25,3 +25,14 @@ alter table public.articles enable row level security;
 -- service_role and bypasses RLS; browser roles receive no table privileges.
 revoke all on table public.articles from anon, authenticated;
 grant select, insert, update, delete on table public.articles to service_role;
+
+-- Upload records also exist before an article is published. The article's banner
+-- and attachments JSON include storage='dropbox' and the Dropbox file ID.
+create table if not exists public.article_media (
+  upload_id text primary key check (upload_id ~ '^[a-f0-9]{32}$'),
+  metadata jsonb not null,
+  created_at timestamptz not null default now()
+);
+alter table public.article_media enable row level security;
+revoke all on table public.article_media from anon, authenticated;
+grant select, insert, update, delete on table public.article_media to service_role;

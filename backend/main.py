@@ -12,6 +12,7 @@ import threading
 import time
 import io
 from uuid import uuid4
+from urllib.parse import quote
 from datetime import date
 from email.message import EmailMessage
 from functools import lru_cache
@@ -21,11 +22,12 @@ from typing import Any, Literal
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
 from PIL import Image, UnidentifiedImageError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, EmailStr, Field
 from starlette.concurrency import run_in_threadpool
 from httpx import TransportError
 from supabase import Client, ClientOptions, PostgrestAPIError, create_client
+from backend import dropbox_storage
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -46,6 +48,8 @@ class ArticleMedia(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     media_type: str = Field(max_length=100)
     size: int = Field(gt=0, le=MAX_UPLOAD_BYTES)
+    storage: Literal["dropbox"] | None = None
+    dropbox_file_id: str | None = Field(default=None, pattern=r"^id:[A-Za-z0-9_-]+$", max_length=200)
 
 
 app = FastAPI(
@@ -318,9 +322,44 @@ def uploaded_media(upload_id: str) -> dict[str, Any]:
     if not re.fullmatch(r"[a-f0-9]{32}", upload_id):
         raise HTTPException(status_code=404, detail="File not found.")
     metadata = UPLOAD_DIR / f"{upload_id}.json"
-    if not metadata.is_file() or not (UPLOAD_DIR / upload_id).is_file():
-        raise HTTPException(status_code=404, detail="File not found.")
-    return json.loads(metadata.read_text(encoding="utf-8"))
+    if metadata.is_file():
+        local = json.loads(metadata.read_text(encoding="utf-8"))
+        if local.get("storage") == "dropbox" or (UPLOAD_DIR / upload_id).is_file():
+            return local
+    client = get_supabase()
+    if client is not None:
+        result = read_article_query(client.table("article_media").select("metadata").eq("upload_id", upload_id).limit(1))
+        if result.data:
+            return result.data[0]["metadata"]
+    raise HTTPException(status_code=404, detail="File not found.")
+
+
+def save_media_metadata(upload_id: str, metadata: dict[str, Any]) -> None:
+    client = get_supabase()
+    if client is not None:
+        try:
+            result = client.table("article_media").upsert({"upload_id": upload_id, "metadata": metadata}).execute()
+            if not result.data:
+                raise RuntimeError("Media record was not returned.")
+        except Exception as exc:
+            raise HTTPException(502, "The file uploaded, but its record could not be saved. Please retry.") from exc
+    else:
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        (UPLOAD_DIR / f"{upload_id}.json").write_text(json.dumps(metadata), encoding="utf-8")
+
+
+def store_upload(data: bytes, upload_id: str, metadata: dict[str, Any]) -> dict[str, Any]:
+    storage = os.getenv("JOURNAL_MEDIA_STORAGE", "dropbox").strip().lower()
+    if storage == "dropbox":
+        metadata = {**metadata, "storage": "dropbox", "dropbox_file_id": dropbox_storage.upload(data, upload_id, metadata["name"])}
+        save_media_metadata(upload_id, metadata)
+    elif storage == "local":
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        (UPLOAD_DIR / upload_id).write_bytes(data)
+        (UPLOAD_DIR / f"{upload_id}.json").write_text(json.dumps(metadata), encoding="utf-8")
+    else:
+        raise HTTPException(500, "Invalid journal media storage setting.")
+    return metadata
 
 
 @app.post("/api/uploads", status_code=201)
@@ -349,15 +388,20 @@ async def upload_media(
         raise HTTPException(status_code=422, detail="Choose a valid JPEG, PNG, WebP, or GIF banner.")
     upload_id = uuid4().hex
     metadata = {"url": f"/api/uploads/{upload_id}", "name": name.replace("\\", "/").split("/")[-1] or "attachment", "media_type": media_type, "size": len(data)}
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    (UPLOAD_DIR / upload_id).write_bytes(data)
-    (UPLOAD_DIR / f"{upload_id}.json").write_text(json.dumps(metadata), encoding="utf-8")
-    return metadata
+    return await run_in_threadpool(store_upload, bytes(data), upload_id, metadata)
 
 
-@app.get("/api/uploads/{upload_id}")
-def download_media(upload_id: str) -> FileResponse:
+@app.get("/api/uploads/{upload_id}", response_model=None)
+def download_media(upload_id: str):
     media = uploaded_media(upload_id)
+    if media.get("storage") == "dropbox":
+        data = dropbox_storage.download(media["dropbox_file_id"], MAX_UPLOAD_BYTES)
+        disposition = "inline" if media["media_type"].startswith("image/") else "attachment"
+        return Response(data, media_type=media["media_type"], headers={
+            "Content-Disposition": f"{disposition}; filename*=UTF-8''{quote(media['name'], safe='')}",
+            "X-Content-Type-Options": "nosniff",
+            "Cache-Control": "public, max-age=3600",
+        })
     return FileResponse(
         UPLOAD_DIR / upload_id,
         media_type=media["media_type"],
@@ -377,9 +421,15 @@ def validated_article(payload: NewPostPayload, slug: str) -> dict[str, Any]:
     article = payload.model_dump(mode="json")
     article["slug"] = slug
     article["tags"] = clean_tags
-    for media in [article["banner"], *article["attachments"]]:
-        if media is not None and uploaded_media(media["url"].rsplit("/", 1)[-1]) != media:
+    def canonical_media(media):
+        if media is None:
+            return None
+        stored = uploaded_media(media["url"].rsplit("/", 1)[-1])
+        if ArticleMedia.model_validate(stored).model_dump() != media:
             raise HTTPException(status_code=422, detail="An attachment is invalid. Please upload it again.")
+        return stored
+    article["banner"] = canonical_media(article["banner"])
+    article["attachments"] = [canonical_media(media) for media in article["attachments"]]
     if article["banner"] and not article["banner"]["media_type"].startswith("image/"):
         raise HTTPException(status_code=422, detail="The banner must be an image.")
 

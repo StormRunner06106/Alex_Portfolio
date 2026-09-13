@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 from httpx import ReadTimeout, RemoteProtocolError
 from supabase import PostgrestAPIError
+from dropbox.exceptions import AuthError
 
 from backend import main
 
@@ -25,7 +26,7 @@ class ArticleMediaTests(unittest.TestCase):
             patch.object(main, "POSTS_PATH", root / "posts.json"),
             patch.object(main, "UPLOAD_DIR", root / "uploads"),
             patch.object(main, "get_supabase", return_value=None),
-            patch.dict(os.environ, {"JOURNAL_ADMIN_PASSWORD": "test-password", "JOURNAL_TOKEN_SECRET": "test-secret"}),
+            patch.dict(os.environ, {"JOURNAL_ADMIN_PASSWORD": "test-password", "JOURNAL_TOKEN_SECRET": "test-secret", "JOURNAL_MEDIA_STORAGE": "local"}),
         ):
             mocked.start()
             self.addCleanup(mocked.stop)
@@ -173,6 +174,84 @@ class ArticleMediaTests(unittest.TestCase):
             query.execute.return_value = MagicMock(data=[])
             self.assertEqual(self.client.get("/api/posts").json(), [])
             self.assertEqual(self.client.get("/api/posts/missing").status_code, 404)
+
+    def test_dropbox_upload_publish_and_download_use_file_id(self):
+        image = io.BytesIO()
+        Image.new("RGB", (20, 20), "blue").save(image, format="PNG")
+        data = image.getvalue()
+        dropbox = MagicMock()
+        dropbox.files_upload.return_value.id = "id:test_photo"
+        stream = MagicMock()
+        stream.iter_content.return_value = [data]
+        dropbox.files_download.return_value = (MagicMock(size=len(data)), stream)
+        with patch.dict(os.environ, {"JOURNAL_MEDIA_STORAGE": "dropbox"}), patch.object(main.dropbox_storage, "get_dropbox", return_value=dropbox):
+            result = self.upload(data, "banner")
+            self.assertEqual(result.status_code, 201, result.text)
+            media = result.json()
+            self.assertEqual(media["dropbox_file_id"], "id:test_photo")
+            self.assertEqual(media["storage"], "dropbox")
+            upload_id = media["url"].rsplit("/", 1)[-1]
+            self.assertFalse((main.UPLOAD_DIR / upload_id).exists())
+            payload = {**self.article_payload(), "banner": media, "attachments": [media]}
+            article = self.client.post("/api/posts", headers=self.headers, json=payload)
+            self.assertEqual(article.status_code, 201, article.text)
+            self.assertEqual(article.json()["banner"]["dropbox_file_id"], "id:test_photo")
+            saved = json.loads(main.POSTS_PATH.read_text())[0]
+            self.assertEqual(saved["attachments"][0]["dropbox_file_id"], "id:test_photo")
+            downloaded = self.client.get(media["url"])
+            self.assertEqual(downloaded.content, data)
+            self.assertEqual(downloaded.headers["content-type"], "image/png")
+            dropbox.files_download.assert_called_once_with("id:test_photo")
+            stream.close.assert_called_once()
+            payload["banner"]["dropbox_file_id"] = "id:someone_else"
+            self.assertEqual(self.client.put("/api/posts/an-editable-article", headers=self.headers, json=payload).status_code, 422)
+
+    def test_dropbox_media_metadata_survives_without_local_files_in_supabase(self):
+        client = MagicMock()
+        media_table = MagicMock()
+        article_table = MagicMock()
+        client.table.side_effect = lambda name: media_table if name == "article_media" else article_table
+        metadata = {"url": "/api/uploads/" + "a" * 32, "name": "image.png", "size": 10,
+                    "media_type": "image/png", "storage": "dropbox", "dropbox_file_id": "id:remote_photo"}
+        media_query = media_table.select.return_value.eq.return_value.limit.return_value
+        media_query.retry.return_value.execute.return_value.data = [{"metadata": metadata}]
+        article_table.select.return_value.eq.return_value.limit.return_value.execute.return_value.data = []
+        article_table.insert.side_effect = lambda record: MagicMock(execute=lambda: MagicMock(data=[record]))
+        with patch.object(main, "get_supabase", return_value=client):
+            main.save_media_metadata("a" * 32, metadata)
+            media_table.upsert.assert_called_once_with({"upload_id": "a" * 32, "metadata": metadata})
+            self.assertEqual(main.uploaded_media("a" * 32), metadata)
+            self.assertFalse(main.UPLOAD_DIR.exists())
+            result = self.client.post("/api/posts", headers=self.headers, json={**self.article_payload(), "banner": metadata})
+            self.assertEqual(result.status_code, 201, result.text)
+            self.assertEqual(article_table.insert.call_args.args[0]["banner"]["dropbox_file_id"], "id:remote_photo")
+
+    def test_dropbox_auth_failure_does_not_expire_journal_session(self):
+        dropbox = MagicMock()
+        dropbox.files_upload.side_effect = AuthError("test-request", "expired_access_token")
+        with patch.dict(os.environ, {"JOURNAL_MEDIA_STORAGE": "dropbox"}), patch.object(main.dropbox_storage, "get_dropbox", return_value=dropbox):
+            self.assertEqual(self.upload(b"notes", name="notes.txt").status_code, 503)
+            self.assertEqual(self.client.get("/api/auth/session", headers=self.headers).status_code, 200)
+            self.assertFalse(main.UPLOAD_DIR.exists())
+
+    def test_dropbox_migration_preserves_urls_originals_and_can_resume(self):
+        from backend.migrate_media_dropbox import migrate
+        media = self.upload(b"original notes", name="notes.txt").json()
+        result = self.client.post("/api/posts", headers=self.headers, json={**self.article_payload(), "attachments": [media]})
+        self.assertEqual(result.status_code, 201)
+        dropbox = MagicMock()
+        dropbox.files_upload.return_value.id = "id:migrated_file"
+        with patch.object(main.dropbox_storage, "get_dropbox", return_value=dropbox):
+            migrate(apply=False)
+            dropbox.files_upload.assert_not_called()
+            migrate(apply=True)
+            migrate(apply=True)
+            dropbox.files_upload.assert_called_once()
+        post = self.client.get("/api/posts/an-editable-article").json()
+        migrated = post["attachments"][0]
+        self.assertEqual(migrated["url"], media["url"])
+        self.assertEqual(migrated["dropbox_file_id"], "id:migrated_file")
+        self.assertEqual((main.UPLOAD_DIR / media["url"].rsplit("/", 1)[-1]).read_bytes(), b"original notes")
 
 
 if __name__ == "__main__":

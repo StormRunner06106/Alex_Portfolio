@@ -77,11 +77,30 @@ Use **+ Section** in the editor to add a section heading and opening paragraph. 
 
 The media picker supports drag-and-drop or file browsing, a live banner preview with the article title and subtitle, file-size and format checks, and duplicate detection by file name and size. Uploads have individual progress, cancel, and retry controls; a failed file does not stop the remaining queue. Retry or remove pending/failed uploads before publishing. Use the up/down controls to set the order of additional photos and files. Replacing a banner keeps the previous image until the replacement uploads successfully.
 
-The publisher accepts a banner image (JPEG, PNG, WebP, or GIF, up to 8 MB) and up to ten additional photos or files (20 MB each). The banner appears in the journal thumbnail and behind the article title and subtitle with a readability overlay; additional photos and downloadable files appear below the body. Uploads require an admin session. File contents are saved in `backend/data/uploads` in both article storage modes; set `JOURNAL_UPLOAD_DIR` to a persistent mounted directory in production and include it in backups. Uploaded files are publicly accessible by their generated URLs. Removing a selection from an unpublished draft does not delete its stored upload.
+The publisher accepts a banner image (JPEG, PNG, WebP, or GIF, up to 8 MB) and up to ten additional photos or files (20 MB each). The banner appears in the journal thumbnail and behind the article title and subtitle with a readability overlay; additional photos and downloadable files appear below the body. Uploads require an admin session. New uploads use Dropbox by default. The Supabase article's `banner` and each item in `attachments` contain `storage: "dropbox"` and `dropbox_file_id: "id:..."`, alongside their names, sizes, media types, and stable website URLs.
+
+The `article_media` table stores the upload-ID-to-Dropbox-ID mapping, including uploads not yet attached to a published article. The public `/api/uploads/{upload_id}` route retrieves bytes from Dropbox by ID, so article rows never contain expiring temporary links or access tokens. Original local uploads continue to work until migrated. Removing an attachment or deleting an article does not delete its stored file.
 
 For an existing Supabase project, run `bash scripts/setup_supabase.sh --schema-only` to add the nullable `banner` and default-empty `attachments` columns before running the updated backend. Existing articles remain compatible.
 
 Verify article publishing and uploads with `.venv/Scripts/python.exe -m unittest backend.test_articles`.
+
+## Connect the owner's Dropbox account
+
+This website uses its own server-side Dropbox API app, independently of journal admin sign-in or any chat connector. A personal Dropbox account is sufficient; it must authorize the website's developer app once.
+
+1. In the [Dropbox App Console](https://www.dropbox.com/developers/apps), create a **Scoped access** app with **App folder** access. Enable `files.content.write` and `files.content.read` on its Permissions tab and click **Submit** to save. Keep this app's permissions limited to those needed for the website.
+2. Set `DROPBOX_APP_KEY` and `DROPBOX_APP_SECRET` in `backend/.env` using the app's Settings tab. Keep these values server-side.
+3. Run `.venv/Scripts/python.exe -m backend.connect_dropbox`. The helper opens the authorization URL in your browser (and prints it as a fallback). Approve access using the owner's personal account, and paste the returned code into the terminal. It uses the app's saved permissions and verifies that both required file scopes were granted before writing the refresh token directly into the ignored `backend/.env` file without printing it. Setup gives credentials in this file priority over shell variables.
+4. Apply the media table with `bash scripts/setup_supabase.sh --schema-only`, if not already applied, then restart FastAPI with `--env-file backend/.env`.
+
+If an old authorization link shows **No scope requested can be granted for this app**, rerun the updated helper and use its newly opened page. It no longer sends an explicit `scope` parameter. If setup reports missing permissions after approval, compare the App key printed by the helper with the app you edited in App Console; enable the listed permissions on that exact app, save with Submit, and rerun setup. Old links are not changed by editing the helper.
+
+The SDK refreshes access tokens automatically using `DROPBOX_REFRESH_TOKEN`. See the [Dropbox OAuth guide](https://developers.dropbox.com/oauth-guide) for offline access. `DROPBOX_ACCESS_TOKEN` is supported for initial testing, but a short-lived token alone will eventually need replacing. New uploads fail clearly if Dropbox is not connected; they do not silently fall back to local storage.
+
+To move existing published media to Dropbox, preview with `.venv/Scripts/python.exe -m backend.migrate_media_dropbox`, then run it with `--apply`. It uploads referenced files, updates the article rows, and preserves website image URLs and the original local files. Run the migration while article editing is paused. It can resume after a partial failure without re-uploading successfully recorded files.
+
+For offline development only, set `JOURNAL_MEDIA_STORAGE=local`. Local files and legacy uploads use `JOURNAL_UPLOAD_DIR` (default `backend/data/uploads`). Dropbox uploads with Supabase configured do not require local file storage. If running without Supabase, upload metadata remains in that local directory and needs persistent storage.
 
 ## Supabase article storage
 
