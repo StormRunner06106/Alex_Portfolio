@@ -22,7 +22,7 @@ resumes/                   Matching HTML/PDF files for each generated version
 
 ## Generate a resume
 
-The standalone generator reads `Alexander Herlan Resume 2024.md`, creates a self-contained HTML document, and prints that exact HTML to PDF using Python Playwright. The template and CSS are in `scripts/generate_resume.py`. It follows the original PDF's Letter page size, narrow left column for section labels, right column for content, black dividers, and green header accents. It uses local Raleway/Lato fonts when available and Arial otherwise; updated content flows across as many pages as needed. The original PDF is only a design reference, and is not needed to run the generator.
+The standalone generator reads `Alexander Herlan Resume 2024.md`, creates a self-contained HTML document, and prints that exact HTML to PDF using Python Playwright. The template and CSS are in `scripts/generate_resume.py`. The default `--layout original` retains the sidebar design with left-column section labels, right-column content, Letter pages, and green header accents. Section starts use normal-flow grid layout to preserve the PDF text reading order. The current content occupies three pages in this layout. Use `--layout ats` for the optional single-column layout, which fits the current content into two pages. Both layouts use the same Markdown and local Raleway/Lato fonts when available, with Arial as a fallback. The original PDF is only a design reference, and is not needed to run the generator.
 
 Install the generator dependencies separately from the web backend:
 

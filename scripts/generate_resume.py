@@ -57,10 +57,11 @@ h1 { font-size: 24pt; line-height: 1.16; margin: 0 0 5pt; }
   letter-spacing: .8pt; text-transform: uppercase; margin-bottom: 2pt; }
 .contact-value { display: inline-block; }
 a { color: #38761d; text-decoration: none; overflow-wrap: anywhere; }
-section { position: relative; margin: 0 0 18pt 184.5pt; }
-.section-start { position: relative; border-top: 3pt solid #000;
-  padding-top: 10pt; break-inside: avoid; break-after: avoid; }
-h2 { position: absolute; top: -3pt; left: -184.5pt; width: 166.5pt;
+section { margin: 0 0 18pt 184.5pt; }
+.section-start { display: grid; grid-template-columns: 166.5pt minmax(0, 1fr);
+  column-gap: 18pt; margin-left: -184.5pt; break-inside: avoid; break-after: avoid; }
+.section-start > h2 + * { border-top: 3pt solid #000; padding-top: 10pt; }
+h2 { width: 166.5pt;
   font-size: 12pt; line-height: 1.2; margin: 0; }
 h2::before { content: ''; display: block; width: 12pt;
   border-top: 1.5pt solid #111; margin-bottom: 12pt; }
@@ -74,7 +75,7 @@ p.dates { color: #666; font-size: 9pt; text-transform: uppercase;
   margin-bottom: 8pt; break-after: avoid; }
 p.dates em { font-style: normal; }
 ul, ol { margin: 4pt 0 8pt; padding-left: 35pt; }
-li { padding-left: 0; margin-bottom: 2pt; orphans: 2; widows: 2; }
+li { padding-left: 0; margin-bottom: 2pt; orphans: 2; widows: 2; break-inside: avoid; }
 li > p { margin-bottom: 2pt; }
 .references { list-style: none; padding: 0; }
 .references li { margin-bottom: 6pt; break-inside: avoid; }
@@ -88,6 +89,35 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; }
   html { background: white; }
   body { width: auto; margin: 0; padding: 0; }
 }
+"""
+
+ATS_CSS = """
+@page { size: Letter; margin: 40pt 43pt; }
+body { padding: 40pt 43pt; font-size: 10.5pt; line-height: 1.22; }
+header { display: block; min-height: 0; margin-bottom: 12pt; }
+h1 { font-size: 23pt; margin-bottom: 3pt; }
+.subtitle { font-size: 12pt; margin-bottom: 6pt; }
+.subtitle > span { display: inline-block; margin-right: 10pt; }
+.contact { border: 0; padding: 0; }
+.contact-name { display: none; }
+.contact p { margin-bottom: 4pt; }
+.contact-grid { display: flex; flex-wrap: wrap; gap: 3pt 12pt; margin-top: 0; }
+.contact-grid a { border: 0; padding: 0; font-size: 9.5pt; }
+.contact-label { display: none; }
+section { position: static; margin: 0 0 11pt; }
+.section-start { display: block; margin-left: 0; border: 0; padding: 0; }
+.section-start > h2 + * { border: 0; padding-top: 0; }
+h2 { position: static; width: auto; font-size: 11pt; text-transform: uppercase;
+  border-bottom: 1pt solid #333; padding-bottom: 3pt; margin: 0 0 6pt; }
+h2::before { display: none; }
+h3 { font-size: 11pt; margin: 10pt 0 2pt; }
+h4 { font-size: 10.5pt; margin: 6pt 0 3pt; }
+h5, h6 { font-size: 10.5pt; margin: 6pt 0 2pt; }
+p { margin-bottom: 5pt; }
+p.dates { font-size: 9pt; margin-bottom: 4pt; }
+ul, ol { padding-left: 15pt; margin: 3pt 0 7pt; }
+li { margin-bottom: 3pt; break-inside: avoid; }
+@media print { body { padding: 0; } }
 """
 
 
@@ -115,9 +145,12 @@ def gradient_text(text: str) -> str:
     return "".join(result)
 
 
-def build_html(source: str) -> str:
-    """Keep Markdown order and inline formatting in the reference's two columns."""
+def build_html(source: str, layout: str = "original") -> str:
+    """Render Markdown in normal reading order or the original two-column layout."""
     import markdown
+
+    if layout not in ("ats", "original"):
+        raise ValueError("Layout must be ats or original.")
 
     try:
         document = ET.fromstring(
@@ -228,15 +261,16 @@ def build_html(source: str) -> str:
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f'<meta name="source-sha256" content="{hashlib.sha256(source.encode("utf-8")).hexdigest()}">'
-        f"<title>{escape(name)} | Resume</title><style>{CSS}</style></head>"
+        f'<meta name="resume-layout" content="{layout}">'
+        f"<title>{escape(name)} | Resume</title><style>{CSS}{ATS_CSS if layout == 'ats' else ''}</style></head>"
         + "<body>" + header + "<main>" + "".join(rendered) + "</main></body></html>\n"
     )
 
 
-def generate(source: Path, output: Path, version: str | None, browser: str):
+def generate(source: Path, output: Path, version: str | None, browser: str, layout: str = "original"):
     from playwright.sync_api import sync_playwright
 
-    html = build_html(source.read_text(encoding="utf-8-sig"))
+    html = build_html(source.read_text(encoding="utf-8-sig"), layout)
     output.mkdir(parents=True, exist_ok=True)
     if version is None:
         number = 1
@@ -283,9 +317,11 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=ROOT / "resumes")
     parser.add_argument("--version", help="Version label; defaults to the next available v1, v2, ...")
     parser.add_argument("--browser", choices=["chromium", "msedge", "chrome"], default="chromium")
+    parser.add_argument("--layout", choices=["ats", "original"], default="original",
+                        help="Original sidebar design (default) or single-column application layout")
     args = parser.parse_args()
     try:
-        paths = generate(args.source.resolve(), args.output_dir.resolve(), args.version, args.browser)
+        paths = generate(args.source.resolve(), args.output_dir.resolve(), args.version, args.browser, args.layout)
     except ImportError as exc:
         parser.exit(1, f"Missing dependency: {exc}. Install Markdown==3.10.3 and playwright==1.62.0.\n")
     except (ValueError, OSError) as exc:
