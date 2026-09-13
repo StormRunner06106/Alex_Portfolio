@@ -34,7 +34,8 @@ BASE_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = BASE_DIR.parent
 DATA_DIR = BASE_DIR / "data"
 FRONTEND_DIST = PROJECT_DIR / "frontend" / "dist"
-RESUME_PATH = PROJECT_DIR / "Alexander Herlan Resume 2024.pdf"
+# Pin the website to the selected resume; generating a draft must not publish it.
+RESUME_PATH = PROJECT_DIR / "resumes" / "resume-v5.pdf"
 POSTS_PATH = DATA_DIR / "posts.json"
 POSTS_LOCK = threading.Lock()
 ADMIN_TOKEN_TTL = 60 * 60 * 4
@@ -597,7 +598,7 @@ def resume() -> FileResponse:
     return FileResponse(
         RESUME_PATH,
         media_type="application/pdf",
-        filename="Alexander-Herlan-Resume.pdf",
+        filename="Alexander-Herlan-Resume-v5.pdf",
         content_disposition_type="inline",
     )
 

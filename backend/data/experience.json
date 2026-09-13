@@ -6,27 +6,36 @@
     "location": "Remote",
     "start": "2024-06",
     "end": null,
-    "summary": "I develop web and mobile applications for long-term clients, agency partners, and professional referrals—owning the path from discovery and architecture through delivery, deployment, and support.",
+    "summary": "I develop web and mobile applications for long-term clients sourced through Upwork, agency partnerships, and professional referrals. Working directly with clients and distributed teams, I turn early-stage ideas and complex business requirements into production-ready software. I own projects from discovery and architecture through implementation, cloud deployment, feedback cycles, and ongoing support. Recent work spans membership management, AI-powered safety systems, and financial technology.",
     "highlights": [
-      "Expanded an initial WordPress engagement into a complete membership and qualification platform for the Irish Institute of Pensions Management.",
-      "Built Android applications for an AI-assisted safety workflow that detects firearms and relays incident evidence to monitoring teams and first responders.",
-      "Delivered a mortgage-lending platform on Cloudflare with real-time messaging, relational data, and secure document storage."
+      "Expanded WordPress landing pages into a PHP and PostgreSQL membership platform for IIPM, with membership applications, annual payments, course-progress reviews, and downloadable PDF certificates.",
+      "Built the Media Pipe and Aegis Android applications with TensorFlow Lite detection and incident alerts integrated into HeroEyez. Deployed in June 2025; broader commercial rollout was later paused.",
+      "Delivered a Preact and Bun mortgage-lending platform on Cloudflare, using Workers, D1, Durable Objects, and R2 for applications, real-time messaging, and secure documents."
     ],
-    "technologies": ["Preact", "Bun", "Cloudflare", "Android", "Kotlin", "TensorFlow Lite", "PHP", "PostgreSQL"],
+    "technologies": [
+      "Preact",
+      "Bun",
+      "Cloudflare",
+      "Android",
+      "Kotlin",
+      "TensorFlow Lite",
+      "PHP",
+      "PostgreSQL"
+    ],
     "projects": [
       {
         "name": "IIPM.ie",
-        "period": "Apr 2025 – Mar 2026",
+        "period": "Apr 2025 - Mar 2026",
         "href": "https://iipm.ie"
       },
       {
         "name": "SafeSchoolz",
-        "period": "Jun 2024 – Jun 2025",
+        "period": "Jun 2024 - Jun 2025",
         "href": "https://heroeyez.com"
       },
       {
         "name": "Equity Funding Source",
-        "period": "Apr 2026 – Jul 2026",
+        "period": "Apr 2026 - Jul 2026",
         "href": "https://equityfundingsource.com"
       }
     ]
@@ -38,15 +47,21 @@
     "location": "Pompano Beach, FL",
     "start": "2022-01",
     "end": "2024-04",
-    "summary": "Helped transform RealtyBid.com into a modern, real-time real estate auction platform, spanning its REST backend, responsive Angular experience, legacy data, and internal administration tools.",
+    "summary": "At Covius, a nationwide real estate technology and holdings company, I contributed to the frontend and backend redesign of RealtyBid.com, an online real estate auction platform. The platform combined a REST API backend, a responsive JavaScript frontend, and asynchronous updates to provide users with real-time auction status. I also built internal tools for website administration and customer support.",
     "highlights": [
-      "Participated in the complete redesign of a major legacy website with substantial historical data.",
-      "Helped adapt a legacy database to a modern application design.",
-      "Created a responsive interface that worked equally well on desktop and mobile.",
-      "Refined the product with QA testers and business partners over many collaborative sprints.",
-      "Used RxJS and Angular to deliver asynchronous, real-time auction feedback."
+      "Contributed to the complete redesign of a major legacy website containing extensive historical data.",
+      "Helped manage and adapt a legacy database to support the redesigned platform.",
+      "Built a responsive web application frontend for desktop and mobile browsers.",
+      "Refined the user experience with QA testers and business partners through iterative sprints and testing sessions.",
+      "Developed frontend functionality using Angular and RxJS."
     ],
-    "technologies": ["Angular", "RxJS", "REST APIs", "JavaScript", "SQL"]
+    "technologies": [
+      "Angular",
+      "RxJS",
+      "REST APIs",
+      "JavaScript",
+      "SQL"
+    ]
   },
   {
     "id": "sead",
@@ -55,15 +70,21 @@
     "location": "Delray Beach, FL",
     "start": "2021-04",
     "end": "2022-07",
-    "summary": "Designed web applications and business analytics for healthcare and legal teams while improving development operations through Azure DevOps and delivery pipelines.",
+    "summary": "At SEAD Software, I used Python and web development skills to build web applications and deliver business analytics for healthcare and legal clients. I also improved company-wide development operations with Azure DevOps and development pipelines to streamline team coordination.",
     "highlights": [
-      "Used Google Cloud Vision to recognize and categorize physical laboratory documents.",
-      "Built a Twilio-based messaging application that responded to customer interactions and generated leads for law firms.",
-      "Maintained AWS infrastructure supporting multiple projects.",
-      "Implemented Azure DevOps infrastructure and trained staff on the platform.",
-      "Maintained a large Git repository serving multiple clients."
+      "Designed and implemented Python code using the Google Cloud Vision API to recognize and digitally categorize physical laboratory documents.",
+      "Developed a text messaging web application using the Twilio API to automate customer responses and generate leads for law firms.",
+      "Maintained and implemented Amazon Web Services infrastructure to support multiple projects.",
+      "Implemented and trained staff on Microsoft Azure DevOps development platform infrastructure.",
+      "Maintained a large Git code repository for multiple clients."
     ],
-    "technologies": ["Python", "Google Cloud Vision", "Twilio", "AWS", "Azure DevOps"]
+    "technologies": [
+      "Python",
+      "Google Cloud Vision",
+      "Twilio",
+      "AWS",
+      "Azure DevOps"
+    ]
   },
   {
     "id": "clarity",
@@ -72,14 +93,21 @@
     "location": "Boca Raton, FL",
     "start": "2020-09",
     "end": "2022-01",
-    "summary": "Led technology decisions for a boutique medical testing laboratory and diagnostics manufacturer as it grew to serve outside entities, including local and state governments.",
+    "summary": "Managed IT operations and technology decisions for a medical testing laboratory and diagnostics test manufacturing business. Supported the company's expansion to work with organizations nationwide, including local and state governments. I also managed software quality control, deployment, and training for its sister company, SEAD Software.",
     "highlights": [
-      "Implemented physical keycard access security across the laboratory facility.",
-      "Established email and cloud-application security standards in Google Workspace and Microsoft 365.",
-      "Expanded laboratory infrastructure and assisted with quality assurance for medical testing equipment.",
-      "Managed software quality, deployment, training, and the daily work of other IT staff."
+      "Implemented a physical keycard/badge access security system for the entire laboratory facility.",
+      "Implemented and maintained security standards for email and cloud-based applications in Google Workspace and Microsoft 365.",
+      "Maintained client-facing websites.",
+      "Expanded laboratory infrastructure and assisted with quality assurance testing of medical equipment.",
+      "Managed and instructed other IT staff in their daily responsibilities."
     ],
-    "technologies": ["IT Leadership", "Google Workspace", "Microsoft 365", "Security", "QA"]
+    "technologies": [
+      "IT Leadership",
+      "Google Workspace",
+      "Microsoft 365",
+      "Security",
+      "QA"
+    ]
   },
   {
     "id": "mytap",
@@ -88,14 +116,20 @@
     "location": "Albuquerque, NM",
     "start": "2016-01",
     "end": "2020-04",
-    "summary": "Collaborated with a design team on a craft-beer recommendation engine powered by web scraping and natural language processing of online reviews.",
+    "summary": "At this startup, I collaborated with a team of designers to build a craft beer recommendation engine using web scraping and natural language processing (NLP) of online beer reviews. This work introduced me to practical applications of machine learning and AI.",
     "highlights": [
-      "Implemented a robust web scraper with Python and Scrapy.",
-      "Created a responsive browser-based phone experience.",
-      "Designed NLP code that built flavor profiles from adjective frequency in review text.",
-      "Maintained a Django backend backed by PostgreSQL."
+      "Implemented a robust web scraper in Python using the Scrapy Python library.",
+      "Created a responsive web application frontend for mobile browsers.",
+      "Designed custom natural language processing code in Python to create craft beer flavor profiles based on adjective frequency in craft beer review text.",
+      "Maintained a Django backend serving data from a PostgreSQL database."
     ],
-    "technologies": ["Python", "Scrapy", "NLP", "Django", "PostgreSQL"]
+    "technologies": [
+      "Python",
+      "Scrapy",
+      "NLP",
+      "Django",
+      "PostgreSQL"
+    ]
   },
   {
     "id": "tricore",
@@ -104,13 +138,21 @@
     "location": "Albuquerque, NM",
     "start": "2013-04",
     "end": "2017-01",
-    "summary": "Supported critical healthcare technology across regional hospitals, from urgent access issues to specialized clinical applications and patient-record transmission.",
+    "summary": "Provided technology support to staff across multiple regional hospitals. Responsibilities included urgent password resets, troubleshooting healthcare applications such as Sunquest, retrieving patient medical records and diagnostic information, and monitoring systems for performance issues and errors.",
     "highlights": [
-      "Held sole overnight responsibility for a production environment normally supported by a 60-person daytime team.",
-      "Monitored patient-record transmission across multiple hospital systems and specialized clinical applications.",
-      "Guided medical staff through time-sensitive, patient-critical troubleshooting.",
-      "Monitored infrastructure, corrected errors, trained new help-desk employees, and remained on call for emergencies."
+      "Solely monitored and supported the company production environment overnight, handling troubleshooting and escalation for an environment supported by 60 staff during the day.",
+      "Monitored the transmission of patient records between hospitals using different medical record systems and healthcare applications.",
+      "Guided medical staff through time-sensitive IT troubleshooting affecting patient care.",
+      "Monitored critical hospital infrastructure for performance and errors, correcting them promptly.",
+      "Trained new help desk employees on their daily tasks and responsibilities.",
+      "Remained on-call off hours for emergency assistance."
     ],
-    "technologies": ["Production Support", "Healthcare IT", "Monitoring", "Incident Response", "Training"]
+    "technologies": [
+      "Production Support",
+      "Healthcare IT",
+      "Monitoring",
+      "Incident Response",
+      "Training"
+    ]
   }
 ]

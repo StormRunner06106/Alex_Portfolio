@@ -22,7 +22,9 @@ resumes/                   Matching HTML/PDF files for each generated version
 
 ## Generate a resume
 
-The standalone generator reads `Alexander Herlan Resume 2024.md`, creates a self-contained HTML document, and prints that exact HTML to PDF using Python Playwright. The template and CSS are in `scripts/generate_resume.py`. The default `--layout original` retains the sidebar design with left-column section labels, right-column content, Letter pages, and green header accents. Section starts use normal-flow grid layout to preserve the PDF text reading order. The current content occupies three pages in this layout. Use `--layout ats` for the optional single-column layout, which fits the current content into two pages. Both layouts use the same Markdown and local Raleway/Lato fonts when available, with Arial as a fallback. The original PDF is only a design reference, and is not needed to run the generator.
+The standalone generator reads `Alexander Herlan Resume 2024.md`, creates a self-contained HTML document, and prints that exact HTML to PDF using Python Playwright. The template and CSS are in `scripts/generate_resume.py`. The default `--layout original` retains the sidebar design with left-column section labels, right-column content, Letter pages, and green header accents. Section starts use normal-flow grid layout to preserve the PDF text reading order. Use `--layout ats` for the optional single-column layout. Both layouts use the same Markdown and local Raleway/Lato fonts when available, with Arial as a fallback. The original PDF is only a design reference, and is not needed to run the generator.
+
+**Selected website resume: version 5.** `/api/resume` serves the exact `resumes/resume-v5.pdf` file as `Alexander-Herlan-Resume-v5.pdf`. The root Markdown has been restored to the source revision recorded in `resumes/resume-v5.html`. New generated versions remain drafts until the selected path in `backend/main.py` is deliberately changed; include the selected PDF when deploying the backend. The experience content in both local JSON and Supabase has been aligned with version 5.
 
 Install the generator dependencies separately from the web backend:
 
@@ -45,7 +47,7 @@ Markdown format: start with one `# Name`, optionally follow with a bold professi
 
 Package references: [Python-Markdown](https://python-markdown.github.io/reference/) and [Playwright PDF rendering](https://playwright.dev/python/docs/api/class-page#page-pdf).
 
-For content updates, edit the Markdown first and rerun the generator to create a new matching HTML/PDF pair. Do not edit generated content directly. Each HTML file records the SHA-256 of its source text in a `source-sha256` meta tag, so its source revision can be checked. The generator rejects long dashes in visible Markdown text instead of silently rewriting them in the output. Earlier versions remain historical snapshots; regenerate after each Markdown edit to keep the latest pair current.
+For content updates, edit the Markdown first and rerun the generator to create a new matching HTML/PDF draft pair. Do not edit generated content directly. Each HTML file records the SHA-256 of its source text in a `source-sha256` meta tag, so its source revision can be checked. The generator rejects long dashes in visible Markdown text instead of silently rewriting them in the output. Earlier versions remain historical snapshots; generating a new pair does not change the selected website resume.
 
 ## Run locally
 
