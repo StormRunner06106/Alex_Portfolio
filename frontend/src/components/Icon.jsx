@@ -1,4 +1,12 @@
 const paths = {
+  upload: <path d="M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5" />,
+  photo: <><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8" cy="8" r="1.5" /><path d="m3 17 6-6 4 4 3-3 5 5" /></>,
+  file: <><path d="M14 2H5v20h14V7l-5-5Zm0 0v6h5M8 13h8M8 17h5" /></>,
+  up: <path d="m6 14 6-6 6 6" />,
+  down: <path d="m6 10 6 6 6-6" />,
+  user: <><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></>,
+  edit: <><path d="m15 4 5 5M4 20l5-1L21 7a2 2 0 0 0-5-5L4 14v6Z" /></>,
+  trash: <><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" /></>,
   arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
   arrowLeft: <path d="m11 17-5-5 5-5m-5 5h13" />,
   arrowUpRight: <path d="M7 17 17 7M8 7h9v9" />,

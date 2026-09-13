@@ -1,27 +1,18 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { createPost, getAdminSession, loginAdmin, uploadMedia } from "../api";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { createPost, getPost, updateArticle, uploadMedia } from "../api";
 import ArticleUploads from "../components/ArticleUploads";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
 import RichTextEditor from "../components/RichTextEditor";
-import { LoadingState } from "../components/Status";
+import { ErrorState, LoadingState } from "../components/Status";
+import { useAdmin } from "../components/AdminSession";
+import { editableDocument, articlePlainText } from "../articleContent";
+import { mainTopics as suggestedTopics } from "../topics";
 
-const TOKEN_KEY = "alex-journal-admin";
 const today = new Date().toISOString().slice(0, 10);
 const emptyDocument = { type: "doc", content: [{ type: "paragraph" }] };
-const suggestedTopics = [
-  "AI",
-  "React",
-  "FastAPI",
-  "Supabase",
-  "Python",
-  "Cloud",
-  "DevOps",
-  "Product",
-  "Reliability",
-  "Security",
-];
+
 
 const initialPost = {
   title: "",
@@ -33,10 +24,15 @@ const initialPost = {
 };
 
 export default function JournalAdminPage() {
+  const { slug } = useParams();
+  return <ArticleForm key={slug ?? "new"} slug={slug} />;
+}
+
+function ArticleForm({ slug }) {
   const navigate = useNavigate();
-  const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY) ?? "");
-  const [checking, setChecking] = useState(Boolean(token));
-  const [password, setPassword] = useState("");
+  const { token, checking, isAdmin, signOut, openSignIn } = useAdmin();
+  const [loading, setLoading] = useState(Boolean(slug));
+  const [loadError, setLoadError] = useState("");
   const [post, setPost] = useState(initialPost);
   const [article, setArticle] = useState(emptyDocument);
   const [articleText, setArticleText] = useState("");
@@ -44,80 +40,72 @@ export default function JournalAdminPage() {
   const [attachments, setAttachments] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [customTopic, setCustomTopic] = useState("");
+  const [topicMessage, setTopicMessage] = useState("");
+  const topicInput = useRef(null);
   const [status, setStatus] = useState({ type: "idle", message: "" });
 
   useEffect(() => {
-    if (!token) {
-      setChecking(false);
-      return undefined;
-    }
-
+    if (!slug) return;
     const controller = new AbortController();
-    getAdminSession(token, controller.signal)
-      .catch((error) => {
-        if (error.name !== "AbortError") {
-          sessionStorage.removeItem(TOKEN_KEY);
-          setToken("");
-          setStatus({ type: "error", message: "Your session ended. Sign in again." });
-        }
+    getPost(slug, controller.signal)
+      .then((existing) => {
+        if (controller.signal.aborted) return;
+        const document = editableDocument(existing.content);
+        setPost({ title: existing.title, excerpt: existing.excerpt, published_at: existing.published_at,
+          read_time: existing.read_time, tags: existing.tags, accent: existing.accent });
+        setArticle(document);
+        setArticleText(articlePlainText(document));
+        setBanner(existing.banner ?? null);
+        setAttachments(existing.attachments ?? []);
       })
-      .finally(() => {
-        if (!controller.signal.aborted) setChecking(false);
-      });
+      .catch((error) => { if (error.name !== "AbortError") setLoadError(error.message); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [token]);
-
-  async function signIn(event) {
-    event.preventDefault();
-    setStatus({ type: "sending", message: "Signing in…" });
-    try {
-      const result = await loginAdmin(password);
-      sessionStorage.setItem(TOKEN_KEY, result.access_token);
-      setToken(result.access_token);
-      setPassword("");
-      setStatus({ type: "success", message: "Signed in. Your session lasts four hours." });
-    } catch (error) {
-      setStatus({ type: "error", message: error.message });
-    }
-  }
-
-  function signOut() {
-    sessionStorage.removeItem(TOKEN_KEY);
-    setToken("");
-    setStatus({ type: "idle", message: "" });
-  }
+  }, [slug]);
 
   function updatePost(event) {
     setPost((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
 
   function toggleTopic(topic) {
-    setPost((current) => {
-      if (current.tags.includes(topic)) {
-        return { ...current, tags: current.tags.filter((item) => item !== topic) };
-      }
-      if (current.tags.length >= 6) {
-        setStatus({ type: "error", message: "Choose up to six topics." });
-        return current;
-      }
-      return { ...current, tags: [...current.tags, topic] };
-    });
+    if (!post.tags.includes(topic) && post.tags.length >= 6) {
+      setTopicMessage("You can select up to six topics. Remove one to add another.");
+      return;
+    }
+    setTopicMessage("");
+    setPost((current) => ({ ...current, tags: current.tags.includes(topic)
+      ? current.tags.filter((item) => item !== topic) : [...current.tags, topic] }));
   }
 
   function addCustomTopic() {
-    const topic = customTopic.trim();
-    if (!topic || post.tags.includes(topic)) return;
+    const typed = customTopic.trim();
+    if (!typed) return;
+    const topic = [...suggestedTopics, ...post.tags].find((item) => item.toLowerCase() === typed.toLowerCase()) ?? typed;
+    if (post.tags.includes(topic)) {
+      setCustomTopic("");
+      setTopicMessage(`${topic} is already selected.`);
+      topicInput.current?.focus();
+      return;
+    }
     if (post.tags.length >= 6) {
-      setStatus({ type: "error", message: "Choose up to six topics." });
+      setTopicMessage("You can select up to six topics. Remove one to add another.");
       return;
     }
     setPost((current) => ({ ...current, tags: [...current.tags, topic] }));
     setCustomTopic("");
+    setTopicMessage(`${topic} added and selected.`);
+    topicInput.current?.focus();
+  }
+
+  function removeCustomTopic(topic) {
+    setPost((current) => ({ ...current, tags: current.tags.filter((item) => item !== topic) }));
+    setTopicMessage(`${topic} removed.`);
+    topicInput.current?.focus();
   }
 
   async function publish(event) {
     event.preventDefault();
-    if (uploading || status.type === "sending") return;
+    if (!isAdmin || uploading || status.type === "sending") return;
     if (!post.tags.length) {
       setStatus({ type: "error", message: "Choose at least one topic." });
       return;
@@ -135,89 +123,60 @@ export default function JournalAdminPage() {
       attachments,
     };
 
-    setStatus({ type: "sending", message: "Publishing…" });
+    setStatus({ type: "sending", message: slug ? "Saving changes..." : "Publishing..." });
     try {
-      const created = await createPost(payload, token);
+      const created = slug ? await updateArticle(slug, payload, token) : await createPost(payload, token);
       setStatus({ type: "success", message: "Published. Opening the article…" });
       navigate(`/blog/${created.slug}`);
     } catch (error) {
-      if (error.status === 401) {
-        sessionStorage.removeItem(TOKEN_KEY);
-        setToken("");
-      }
       setStatus({ type: "error", message: error.message });
     }
   }
 
-  async function uploadFiles(files, purpose) {
-    if (!files.length || uploading) return;
-    if (purpose === "attachment" && attachments.length + files.length > 10) {
-      setStatus({ type: "error", message: "Choose up to 10 additional files." });
-      return;
-    }
-    const limit = (purpose === "banner" ? 8 : 20) * 1024 * 1024;
-    if (files.some((file) => !file.size || file.size > limit)) {
-      setStatus({ type: "error", message: `Choose non-empty files up to ${limit / 1024 / 1024} MB each.` });
-      return;
-    }
-    setUploading(true);
-    setStatus({ type: "idle", message: "" });
-    try {
-      for (const file of files) {
-        const uploaded = await uploadMedia(file, purpose, token);
-        if (purpose === "banner") setBanner(uploaded);
-        else setAttachments((current) => [...current, uploaded]);
-      }
-    } catch (error) {
-      setStatus({ type: "error", message: error.message });
-    } finally {
-      setUploading(false);
-    }
+  async function uploadFile(file, purpose, options) {
+    const uploaded = await uploadMedia(file, purpose, token, options);
+    if (options.signal.aborted) return;
+    if (purpose === "banner") setBanner(uploaded);
+    else setAttachments((current) => [...current, uploaded]);
+  }
+
+  function moveAttachment(url, direction) {
+    setAttachments((current) => {
+      const index = current.findIndex((file) => file.url === url);
+      const next = index + direction;
+      if (index < 0 || next < 0 || next >= current.length) return current;
+      const ordered = [...current];
+      [ordered[index], ordered[next]] = [ordered[next], ordered[index]];
+      return ordered;
+    });
   }
 
   return (
     <section className="content-page container publisher-page">
       <PageHeader
         eyebrow="Journal studio"
-        title="Publish a field note."
-        description="A focused writing room with rich-text editing and Supabase-ready storage."
-        aside={token ? <span className="publisher-badge"><span /> Authenticated</span> : null}
+        title={slug ? "Edit your field note." : "Publish a field note."}
+        description="Write in sections, add photos and files, and share your field notes."
+        aside={isAdmin ? <span className="publisher-badge"><span /> Admin</span> : null}
       />
 
       {checking && <LoadingState label="Checking your session" />}
 
-      {!checking && !token && (
-        <form className="publisher-login reveal" onSubmit={signIn}>
-          <span className="publisher-login__icon"><Icon name="lock" size={24} /></span>
-          <div>
-            <p className="eyebrow">Private access</p>
-            <h2>Sign in to write</h2>
-            <p>The publisher uses one server-side password. It is never stored in the browser.</p>
-          </div>
-          <label>
-            <span>Admin password</span>
-            <input
-              autoComplete="current-password"
-              autoFocus
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Enter your journal password"
-              required
-              type="password"
-              value={password}
-            />
-          </label>
-          <button className="button button--primary" disabled={status.type === "sending"} type="submit">
-            Unlock publisher <Icon name="arrow" size={18} />
-          </button>
-          {status.message && <p className={`form-status form-status--${status.type}`} role="status">{status.message}</p>}
-        </form>
+      {!checking && !isAdmin && (
+        <div className="publisher-login">
+          <h2>Sign in to manage articles</h2>
+          <p>Use your admin password to create or edit a journal article.</p>
+          <button className="button button--primary" type="button" onClick={openSignIn}><Icon name="lock" size={18} /> Sign in</button>
+        </div>
       )}
+      {isAdmin && loading && <LoadingState label="Loading article" />}
+      {isAdmin && loadError && <ErrorState message={loadError} />}
 
-      {!checking && token && (
+      {isAdmin && !loading && !loadError && (
         <form className="publisher-form reveal" onSubmit={publish}>
           <div className="publisher-toolbar">
             <div>
-              <p className="eyebrow">New article</p>
+              <p className="eyebrow">{slug ? "Edit article" : "New article"}</p>
               <p>Write, format, choose the topics, and publish from one clean workspace.</p>
             </div>
             <button className="text-button" onClick={signOut} type="button"><Icon name="logout" size={16} /> Sign out</button>
@@ -268,22 +227,41 @@ export default function JournalAdminPage() {
                   {post.tags.includes(topic) ? "✓ " : "+ "}{topic}
                 </button>
               ))}
+              {post.tags.filter((topic) => !suggestedTopics.includes(topic)).map((topic) => (
+                <span className="topic-chip is-active" key={topic}>
+                  <span><Icon name="check" size={13} /> {topic}</span>
+                  <button className="topic-chip__remove" type="button" aria-label={`Remove topic ${topic}`}
+                    title={`Remove ${topic}`} onClick={() => removeCustomTopic(topic)}><Icon name="close" size={14} /></button>
+                </span>
+              ))}
             </div>
             <div className="custom-topic">
+              <div className="custom-topic__input">
+              <label className="sr-only" htmlFor="custom-topic">Custom topic</label>
               <input
+                ref={topicInput}
+                id="custom-topic"
+                aria-describedby="topic-shortcut topic-feedback"
+                aria-keyshortcuts="Enter"
+                enterKeyHint="done"
                 maxLength="40"
-                onChange={(event) => setCustomTopic(event.target.value)}
+                onChange={(event) => { setCustomTopic(event.target.value); setTopicMessage(""); }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
+                    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
                     addCustomTopic();
                   }
                 }}
                 placeholder="Add another topic"
                 value={customTopic}
               />
-              <button onClick={addCustomTopic} type="button">Add topic</button>
+              <kbd aria-hidden="true">Enter ↵</kbd>
+              </div>
+              <button onClick={addCustomTopic} disabled={!customTopic.trim()} type="button">Add topic</button>
             </div>
+            <p className="topic-hint" id="topic-shortcut">Type a topic and press <kbd>Enter</kbd> to add and select it. Use × on a custom topic to remove it.</p>
+            <p className="topic-feedback" id="topic-feedback" role="status">{topicMessage}</p>
           </fieldset>
 
           <div className="publisher-field publisher-field--wide">
@@ -293,13 +271,15 @@ export default function JournalAdminPage() {
           </div>
 
           <p className="section-help">Use + Section to add a heading and a new section. Each section gets a divider and an automatic uppercase drop cap on its opening paragraph.</p>
-          <ArticleUploads banner={banner} attachments={attachments} busy={uploading || status.type === "sending"}
-            onUpload={uploadFiles} onRemoveBanner={() => setBanner(null)}
+          <ArticleUploads banner={banner} attachments={attachments} busy={status.type === "sending"}
+            title={post.title} subtitle={post.excerpt} onPendingChange={setUploading} onMoveAttachment={moveAttachment}
+            onUpload={uploadFile} onRemoveBanner={() => setBanner(null)}
             onRemoveAttachment={(url) => setAttachments((current) => current.filter((file) => file.url !== url))} />
 
           <div className="publisher-submit">
-            <button className="button button--primary" disabled={uploading || status.type === "sending"} type="submit">
-              <Icon name="plus" size={18} /> {status.type === "sending" ? "Publishing…" : "Publish article"}
+            <Link className="text-button" to={slug ? `/blog/${slug}` : "/blog"}>Cancel</Link>
+            <button className="button button--primary" disabled={!isAdmin || uploading || status.type === "sending"} type="submit">
+              <Icon name={slug ? "check" : "plus"} size={18} /> {status.type === "sending" ? "Saving..." : slug ? "Save changes" : "Publish article"}
             </button>
             {status.message && <p className={`form-status form-status--${status.type}`} role="status">{status.message}</p>}
           </div>

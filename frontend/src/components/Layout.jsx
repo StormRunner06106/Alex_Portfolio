@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import Icon from "./Icon";
+import { useAdmin } from "./AdminSession";
 
 const navItems = [
   { label: "About", to: "/" },
@@ -11,6 +12,7 @@ const navItems = [
 ];
 
 function Header({ name }) {
+  const { isAdmin, checking, openSignIn } = useAdmin();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -20,10 +22,11 @@ function Header({ name }) {
     <header className="site-header">
       <div className="container header-inner">
         <NavLink className="brand" to="/" aria-label={`${name} home`}>
-          <span className="brand-mark">AH</span>
+          <img className="brand-mark brand-photo" src="/alex-avatar-96.webp" width="42" height="42" alt="" />
           <span className="brand-name">{name}</span>
         </NavLink>
 
+        <div className="header-actions">
         <nav className={`nav-shell ${menuOpen ? "is-open" : ""}`} aria-label="Main navigation">
           {navItems.map((item) => (
             <NavLink
@@ -37,6 +40,13 @@ function Header({ name }) {
           ))}
         </nav>
 
+        <button type="button" className={`icon-button header-signin ${isAdmin ? "is-admin" : ""}`}
+          aria-label={isAdmin ? "Admin account" : "Admin sign in"} title={isAdmin ? "Admin account" : "Admin sign in"}
+          aria-haspopup="dialog" disabled={checking} onClick={openSignIn}>
+          <Icon name={isAdmin ? "user" : "lock"} />
+          {isAdmin && <span className="admin-indicator" />}
+        </button>
+
         <button
           aria-expanded={menuOpen}
           aria-label={menuOpen ? "Close navigation" : "Open navigation"}
@@ -46,6 +56,7 @@ function Header({ name }) {
         >
           <Icon name={menuOpen ? "close" : "menu"} />
         </button>
+        </div>
       </div>
     </header>
   );
@@ -74,6 +85,41 @@ export default function Layout({ children, profile }) {
   const location = useLocation();
   const name = profile?.display_name ?? "Alex Herlan";
   const isAbout = location.pathname === "/";
+
+  useEffect(() => {
+    let pressed = null;
+    let origin = null;
+    const clear = () => {
+      pressed?.removeAttribute("data-pressed");
+      pressed = null;
+      origin = null;
+    };
+    const press = (event) => {
+      clear();
+      if (!event.isPrimary || event.button !== 0) return;
+      const control = event.target.closest?.(".button, .culture-link");
+      if (!control || control.matches(":disabled")) return;
+      pressed = control;
+      origin = { x: event.clientX, y: event.clientY };
+      pressed.setAttribute("data-pressed", "true");
+    };
+    const move = (event) => {
+      if (origin && Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 10) clear();
+    };
+    window.addEventListener("pointerdown", press, { passive: true });
+    window.addEventListener("pointermove", move, { passive: true });
+    window.addEventListener("pointerup", clear);
+    window.addEventListener("pointercancel", clear);
+    window.addEventListener("blur", clear);
+    return () => {
+      clear();
+      window.removeEventListener("pointerdown", press);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", clear);
+      window.removeEventListener("pointercancel", clear);
+      window.removeEventListener("blur", clear);
+    };
+  }, []);
 
   return (
     <div className="app-shell">

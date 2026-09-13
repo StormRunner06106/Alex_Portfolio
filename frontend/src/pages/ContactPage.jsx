@@ -139,6 +139,8 @@ export default function ContactPage({ profile, error }) {
       </div>
 
       <div className="culture-card culture-card--wide reveal">
+        <img className="culture-photo" src="/alex_music.jpg" alt="Alex playing guitar" width="206" height="206" loading="lazy" />
+        <div className="culture-content">
         <div className="culture-intro">
           <p className="eyebrow">Beyond the build</p>
           <h2><strong>I love music</strong> and nearly always have something playing on Spotify.</h2>
@@ -158,6 +160,7 @@ export default function ContactPage({ profile, error }) {
               <Icon name="arrowUpRight" size={18} />
             </a>
           ))}
+        </div>
         </div>
       </div>
     </section>

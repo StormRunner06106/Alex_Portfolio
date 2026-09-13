@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
 import os
 import re
 import smtplib
@@ -23,7 +24,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, EmailStr, Field
 from starlette.concurrency import run_in_threadpool
-from supabase import Client, create_client
+from httpx import TransportError
+from supabase import Client, ClientOptions, PostgrestAPIError, create_client
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -36,6 +38,7 @@ POSTS_LOCK = threading.Lock()
 ADMIN_TOKEN_TTL = 60 * 60 * 4
 UPLOAD_DIR = Path(os.getenv("JOURNAL_UPLOAD_DIR", str(DATA_DIR / "uploads"))).resolve()
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+logger = logging.getLogger("uvicorn.error")
 
 
 class ArticleMedia(BaseModel):
@@ -60,7 +63,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -111,7 +114,11 @@ def get_supabase() -> Client | None:
             status_code=500,
             detail="Supabase configuration is incomplete.",
         )
-    return create_client(url, key)
+    return create_client(url, key, options=ClientOptions(
+        postgrest_client_timeout=8,
+        auto_refresh_token=False,
+        persist_session=False,
+    ))
 
 
 def articles_table() -> str:
@@ -119,6 +126,25 @@ def articles_table() -> str:
     if not re.fullmatch(r"[a-z][a-z0-9_]*", table):
         raise HTTPException(status_code=500, detail="Invalid Supabase table name.")
     return table
+
+
+def read_article_query(query: Any) -> Any:
+    # Bound reads to two attempts, including SDK retries. Never retry mutations.
+    for attempt in range(2):
+        try:
+            return query.retry(False).execute()
+        except Exception as exc:
+            code = str(getattr(exc, "code", ""))
+            transient = isinstance(exc, TransportError) or (
+                isinstance(exc, PostgrestAPIError) and code in {"500", "502", "503", "504", "520", "522", "524"}
+            )
+            # Log the error type and code, not credentials, article data, or response bodies.
+            safe_code = code if re.fullmatch(r"[A-Za-z0-9_]{1,20}", code) else "unknown"
+            logger.warning("Journal read failed: type=%s code=%s attempt=%s", type(exc).__name__, safe_code, attempt + 1)
+            if transient and attempt == 0:
+                time.sleep(0.2)
+                continue
+            raise HTTPException(status_code=502, detail="The journal store is temporarily unavailable. Please try again.") from exc
 
 
 def article_records(include_content: bool = True) -> list[dict[str, Any]]:
@@ -135,18 +161,9 @@ def article_records(include_content: bool = True) -> list[dict[str, Any]]:
     columns = "slug,title,excerpt,published_at,read_time,tags,accent,banner,attachments"
     if include_content:
         columns += ",content"
-    try:
-        response = (
-            client.table(articles_table())
-            .select(columns)
-            .order("published_at", desc=True)
-            .execute()
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="The journal store is temporarily unavailable.",
-        ) from exc
+    response = read_article_query(
+        client.table(articles_table()).select(columns).order("published_at", desc=True)
+    )
     return response.data or []
 
 
@@ -263,12 +280,13 @@ def admin_login(payload: LoginPayload) -> dict[str, Any]:
         "token_type": "bearer",
         "expires_at": expires_at,
         "expires_in": ADMIN_TOKEN_TTL,
+        "role": "admin",
     }
 
 
 @app.get("/api/auth/session")
-def admin_session(_: None = Depends(require_admin)) -> dict[str, bool]:
-    return {"authenticated": True}
+def admin_session(_: None = Depends(require_admin)) -> dict[str, Any]:
+    return {"authenticated": True, "role": "admin"}
 
 
 @app.get("/api/posts")
@@ -349,11 +367,7 @@ def download_media(upload_id: str) -> FileResponse:
     )
 
 
-@app.post("/api/posts", status_code=status.HTTP_201_CREATED)
-def create_post(
-    payload: NewPostPayload, _: None = Depends(require_admin)
-) -> dict[str, Any]:
-    slug = post_slug(payload.title)
+def validated_article(payload: NewPostPayload, slug: str) -> dict[str, Any]:
     clean_tags = list(dict.fromkeys(tag.strip() for tag in payload.tags if tag.strip()))
     if not clean_tags:
         raise HTTPException(status_code=422, detail="Add at least one topic tag.")
@@ -373,6 +387,25 @@ def create_post(
         raise HTTPException(status_code=422, detail="The article body is too short.")
     if len(json.dumps(article["content"], ensure_ascii=False)) > 250_000:
         raise HTTPException(status_code=422, detail="The formatted article is too large.")
+    return article
+
+
+def save_local_posts(records: list[dict[str, Any]]) -> None:
+    # Call while holding POSTS_LOCK so readers only see a complete replacement.
+    temporary_path = POSTS_PATH.with_suffix(".json.tmp")
+    temporary_path.write_text(
+        json.dumps(records, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    temporary_path.replace(POSTS_PATH)
+    read_data.cache_clear()
+
+
+@app.post("/api/posts", status_code=status.HTTP_201_CREATED)
+def create_post(
+    payload: NewPostPayload, _: None = Depends(require_admin)
+) -> dict[str, Any]:
+    slug = post_slug(payload.title)
+    article = validated_article(payload, slug)
 
     client = get_supabase()
     if client is not None:
@@ -409,15 +442,60 @@ def create_post(
                 detail="A journal post with this title already exists.",
             )
         current_posts.append(article)
-        temporary_path = POSTS_PATH.with_suffix(".json.tmp")
-        temporary_path.write_text(
-            json.dumps(current_posts, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
-        temporary_path.replace(POSTS_PATH)
-        read_data.cache_clear()
+        save_local_posts(current_posts)
 
     return article
+
+
+@app.put("/api/posts/{slug}")
+def update_post(
+    slug: str, payload: NewPostPayload, _: None = Depends(require_admin)
+) -> dict[str, Any]:
+    if not re.fullmatch(r"[a-z0-9-]+", slug):
+        raise HTTPException(status_code=404, detail="Post not found")
+    # Keep published URLs stable when an admin changes the title.
+    article = validated_article(payload, slug)
+    client = get_supabase()
+    if client is not None:
+        try:
+            response = client.table(articles_table()).update(article).eq("slug", slug).execute()
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail="The article could not be updated. Please try again.") from exc
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Post not found")
+        return response.data[0]
+
+    with POSTS_LOCK:
+        records = json.loads(POSTS_PATH.read_text(encoding="utf-8"))
+        for index, existing in enumerate(records):
+            if existing["slug"] == slug:
+                records[index] = {**existing, **article}
+                save_local_posts(records)
+                return records[index]
+    raise HTTPException(status_code=404, detail="Post not found")
+
+
+@app.delete("/api/posts/{slug}")
+def delete_post(slug: str, _: None = Depends(require_admin)) -> dict[str, bool]:
+    if not re.fullmatch(r"[a-z0-9-]+", slug):
+        raise HTTPException(status_code=404, detail="Post not found")
+    client = get_supabase()
+    if client is not None:
+        try:
+            response = client.table(articles_table()).delete().eq("slug", slug).execute()
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail="The article could not be deleted. Please try again.") from exc
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Post not found")
+        return {"deleted": True}
+
+    with POSTS_LOCK:
+        records = json.loads(POSTS_PATH.read_text(encoding="utf-8"))
+        remaining = [post for post in records if post["slug"] != slug]
+        if len(remaining) == len(records):
+            raise HTTPException(status_code=404, detail="Post not found")
+        save_local_posts(remaining)
+    return {"deleted": True}
 
 
 @app.get("/api/posts/{slug}")
@@ -427,19 +505,11 @@ def post_by_slug(slug: str) -> dict[str, Any]:
 
     client = get_supabase()
     if client is not None:
-        try:
-            response = (
-                client.table(articles_table())
-                .select("slug,title,excerpt,published_at,read_time,tags,accent,content,banner,attachments")
-                .eq("slug", slug)
-                .limit(1)
-                .execute()
-            )
-        except Exception as exc:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="The journal store is temporarily unavailable.",
-            ) from exc
+        response = read_article_query(
+            client.table(articles_table())
+            .select("slug,title,excerpt,published_at,read_time,tags,accent,content,banner,attachments")
+            .eq("slug", slug).limit(1)
+        )
         if response.data:
             return response.data[0]
         raise HTTPException(status_code=404, detail="Post not found")

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { getPost, mediaUrl } from "../api";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { mediaUrl } from "../api";
 import { ArticleAttachments } from "../components/ArticleUploads";
+import ArticleAdminActions from "../components/ArticleAdminActions";
+import useJournalResource from "../useJournalResource";
 import Icon from "../components/Icon";
 import { RichTextArticle } from "../components/RichTextEditor";
 import { ErrorState, LoadingState } from "../components/Status";
@@ -16,33 +17,15 @@ function formatDate(date) {
 
 export default function BlogPostPage() {
   const { slug } = useParams();
-  const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const { data: post, loading, error, reload } = useJournalResource(slug);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-    getPost(slug, controller.signal)
-      .then((result) => {
-        if (!controller.signal.aborted) setPost(result);
-      })
-      .catch((requestError) => {
-        if (requestError.name !== "AbortError") setError(requestError.message);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => controller.abort();
-  }, [slug]);
-
-  if (loading) {
+  if (loading && !post) {
     return <div className="container content-page"><LoadingState label="Opening the note" /></div>;
   }
 
-  if (error) {
-    return <div className="container content-page"><ErrorState message={error} /></div>;
+  if (error && !post) {
+    return <div className="container content-page"><ErrorState message={error} onRetry={reload} /></div>;
   }
 
   if (!post) {
@@ -51,11 +34,13 @@ export default function BlogPostPage() {
 
   return (
     <article className="article-page">
+      {error && <div className="article-container"><ErrorState message={error} onRetry={reload} /></div>}
       <header className={`article-hero article-hero--${post.accent}`}>
         {post.banner && <img className="article-banner" src={mediaUrl(post.banner)} alt="" />}
         <div className="article-hero__shape" aria-hidden="true"><Icon name="spark" size={50} /></div>
         <div className="article-container reveal">
           <Link className="back-link" to="/blog"><Icon name="arrowLeft" size={17} /> Back to journal</Link>
+          <ArticleAdminActions post={post} onDeleted={() => navigate("/blog")} />
           <div className="article-tags">
             {post.tags.map((tag) => <span key={tag}>{tag}</span>)}
           </div>

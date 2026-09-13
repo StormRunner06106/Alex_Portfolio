@@ -4,10 +4,12 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 from PIL import Image
+from httpx import ReadTimeout, RemoteProtocolError
+from supabase import PostgrestAPIError
 
 from backend import main
 
@@ -78,6 +80,99 @@ class ArticleMediaTests(unittest.TestCase):
         self.assertEqual(downloaded.headers["content-type"], "application/octet-stream")
         self.assertEqual(downloaded.headers["x-content-type-options"], "nosniff")
         self.assertIn("attachment", downloaded.headers["content-disposition"])
+
+    def article_payload(self):
+        return {
+            "title": "An editable article", "excerpt": "An introduction with enough detail for readers.",
+            "published_at": "2026-09-12", "read_time": 3, "tags": ["Custom topic"],
+            "content": {"type": "doc", "content": [{"type": "paragraph", "content": [
+                {"type": "text", "text": "An original article body with enough text to validate and publish."}
+            ]}]},
+        }
+
+    def test_admin_role_and_protected_crud(self):
+        self.assertEqual(self.client.post("/api/auth/login", json={"password": "wrong"}).status_code, 401)
+        session = self.client.get("/api/auth/session", headers=self.headers)
+        self.assertEqual(session.json(), {"authenticated": True, "role": "admin"})
+        payload = self.article_payload()
+        self.assertEqual(self.client.post("/api/posts", json=payload).status_code, 401)
+        created = self.client.post("/api/posts", json=payload, headers=self.headers).json()
+        path = f'/api/posts/{created["slug"]}'
+        for headers in ({}, {"Authorization": "Bearer 1.invalid"}):
+            self.assertEqual(self.client.put(path, json=payload, headers=headers).status_code, 401)
+            self.assertEqual(self.client.delete(path, headers=headers).status_code, 401)
+        self.assertEqual(self.client.get(path).json()["title"], payload["title"])
+
+        payload["title"] = "The updated article title"
+        payload["tags"] = ["Updated topic"]
+        payload["attachments"] = [self.upload(b"updated notes", name="notes.txt").json()]
+        updated = self.client.put(path, json=payload, headers=self.headers)
+        self.assertEqual(updated.status_code, 200, updated.text)
+        self.assertEqual(updated.json()["slug"], created["slug"])
+        self.assertEqual(self.client.get(path).json()["attachments"], payload["attachments"])
+        self.assertEqual(self.client.get("/api/posts").json()[0]["title"], payload["title"])
+        invalid = {**payload, "content": {"type": "doc", "content": []}}
+        self.assertEqual(self.client.put(path, json=invalid, headers=self.headers).status_code, 422)
+        self.assertEqual(self.client.put("/api/posts/missing", json=payload, headers=self.headers).status_code, 404)
+        self.assertEqual(self.client.delete(path, headers=self.headers).status_code, 200)
+        self.assertEqual(self.client.get(path).status_code, 404)
+        self.assertEqual(self.client.get("/api/posts").json(), [])
+        self.assertEqual(json.loads(main.POSTS_PATH.read_text()), [])
+        self.assertEqual(self.client.delete(path, headers=self.headers).status_code, 404)
+
+    def test_supabase_update_delete_are_scoped_and_report_failures(self):
+        client = MagicMock()
+        table = client.table.return_value
+        payload = self.article_payload()
+        table.update.return_value.eq.return_value.execute.return_value.data = [{**payload, "slug": "original-url"}]
+        table.delete.return_value.eq.return_value.execute.return_value.data = [{"slug": "original-url"}]
+        with patch.object(main, "get_supabase", return_value=client):
+            updated = self.client.put("/api/posts/original-url", json=payload, headers=self.headers)
+            self.assertEqual(updated.status_code, 200)
+            table.update.return_value.eq.assert_called_once_with("slug", "original-url")
+            self.assertEqual(self.client.delete("/api/posts/original-url", headers=self.headers).status_code, 200)
+            table.delete.return_value.eq.assert_called_once_with("slug", "original-url")
+            table.update.return_value.eq.return_value.execute.return_value.data = []
+            self.assertEqual(self.client.put("/api/posts/missing", json=payload, headers=self.headers).status_code, 404)
+            table.delete.return_value.eq.return_value.execute.return_value.data = []
+            self.assertEqual(self.client.delete("/api/posts/missing", headers=self.headers).status_code, 404)
+            table.update.return_value.eq.return_value.execute.side_effect = RuntimeError("offline")
+            self.assertEqual(self.client.put("/api/posts/original-url", json=payload, headers=self.headers).status_code, 502)
+            table.delete.return_value.eq.return_value.execute.side_effect = RuntimeError("offline")
+            self.assertEqual(self.client.delete("/api/posts/original-url", headers=self.headers).status_code, 502)
+
+    def test_journal_reads_retry_transient_errors_but_remain_public(self):
+        client = MagicMock()
+        query = MagicMock()
+        query.retry.return_value = query
+        client.table.return_value.select.return_value.order.return_value = query
+        client.table.return_value.select.return_value.eq.return_value.limit.return_value = query
+        article = {**self.article_payload(), "slug": "test-article", "accent": "mint"}
+        response = MagicMock(data=[article])
+        with patch.object(main, "get_supabase", return_value=client), patch.object(main.time, "sleep"):
+            for path in ("/api/posts", "/api/posts/test-article"):
+                for failure in (
+                    RemoteProtocolError("connection ended"),
+                    ReadTimeout("read timed out"),
+                    PostgrestAPIError({"code": "503", "message": "unavailable"}),
+                ):
+                    query.execute.reset_mock()
+                    query.execute.side_effect = [failure, response]
+                    result = self.client.get(path)  # No admin token: reading stays public.
+                    self.assertEqual(result.status_code, 200, result.text)
+                    self.assertEqual(query.execute.call_count, 2)
+                query.execute.reset_mock()
+                query.execute.side_effect = ReadTimeout("offline")
+                self.assertEqual(self.client.get(path).status_code, 502)
+                self.assertEqual(query.execute.call_count, 2)
+                query.execute.reset_mock()
+                query.execute.side_effect = PostgrestAPIError({"code": "42P01", "message": "missing table"})
+                self.assertEqual(self.client.get(path).status_code, 502)
+                self.assertEqual(query.execute.call_count, 1)
+            query.execute.side_effect = None
+            query.execute.return_value = MagicMock(data=[])
+            self.assertEqual(self.client.get("/api/posts").json(), [])
+            self.assertEqual(self.client.get("/api/posts/missing").status_code, 404)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 fastapi
+httpx
 Pillow
 uvicorn[standard]
 email-validator

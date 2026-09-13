@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { getProfile } from "./api";
 import Layout from "./components/Layout";
+import AdminProvider from "./components/AdminSession";
 import AboutPage from "./pages/AboutPage";
 import BlogPage from "./pages/BlogPage";
 import ContactPage from "./pages/ContactPage";
@@ -38,7 +39,7 @@ export default function App() {
   }, []);
 
   return (
-    <Layout profile={profile}>
+    <AdminProvider><Layout profile={profile}>
       <ScrollToTop />
       <Suspense fallback={<div className="container content-page"><LoadingState label="Opening page" /></div>}>
         <Routes>
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/skills" element={<SkillsPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/manage" element={<JournalAdminPage />} />
+          <Route path="/blog/:slug/edit" element={<JournalAdminPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route
             path="/contact"
@@ -58,6 +60,6 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
-    </Layout>
+    </Layout></AdminProvider>
   );
 }

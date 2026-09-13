@@ -1,8 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getPosts, mediaUrl } from "../api";
+import { mediaUrl } from "../api";
+import { mainTopics, topicKey } from "../topics";
+import useJournalResource from "../useJournalResource";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
+import ArticleAdminActions from "../components/ArticleAdminActions";
+import { useAdmin } from "../components/AdminSession";
 import { ErrorState, LoadingState } from "../components/Status";
 
 function formatDate(date) {
@@ -13,7 +17,7 @@ function formatDate(date) {
   }).format(new Date(`${date}T12:00:00`));
 }
 
-function PostCard({ post, featured }) {
+function PostCard({ post, featured, onDeleted }) {
   return (
     <article className={`post-card post-card--${post.accent} ${featured ? "post-card--featured" : ""} reveal`}>
       <Link to={`/blog/${post.slug}`} aria-label={`Read ${post.title}`}>
@@ -39,42 +43,34 @@ function PostCard({ post, featured }) {
           </div>
         </div>
       </Link>
+      <ArticleAdminActions post={post} onDeleted={onDeleted} />
     </article>
   );
 }
 
 export default function BlogPage() {
-  const [posts, setPosts] = useState([]);
+  const { isAdmin } = useAdmin();
+  const { data, setData: setPosts, loading, error, reload } = useJournalResource();
+  const posts = data ?? [];
   const [query, setQuery] = useState("");
-  const [activeTag, setActiveTag] = useState("All");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    const controller = new AbortController();
-    getPosts(controller.signal)
-      .then((result) => {
-        if (!controller.signal.aborted) setPosts(result);
-      })
-      .catch((requestError) => {
-        if (requestError.name !== "AbortError") setError(requestError.message);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => controller.abort();
-  }, []);
-
-  const tags = useMemo(() => {
-    const counts = new Map();
-    posts.flatMap((post) => post.tags).forEach((tag) => counts.set(tag, (counts.get(tag) ?? 0) + 1));
-    return ["All", ...[...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([tag]) => tag)];
+  const [activeTag, setActiveTag] = useState(null);
+  const [showOthers, setShowOthers] = useState(false);
+  const tags = [null, ...mainTopics];
+  const customTopics = useMemo(() => {
+    const mainKeys = new Set(mainTopics.map(topicKey));
+    const custom = new Map();
+    posts.flatMap((post) => post.tags).forEach((tag) => {
+      const key = topicKey(tag);
+      if (key && !mainKeys.has(key) && !custom.has(key)) custom.set(key, tag.trim());
+    });
+    return [...custom.values()].sort((a, b) => a.localeCompare(b));
   }, [posts]);
+  const customActive = activeTag !== null && !mainTopics.some((tag) => topicKey(tag) === topicKey(activeTag));
 
   const filteredPosts = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return posts.filter((post) => {
-      const matchesTag = activeTag === "All" || post.tags.includes(activeTag);
+      const matchesTag = activeTag === null || post.tags.some((tag) => topicKey(tag) === topicKey(activeTag));
       const matchesQuery = !needle || `${post.title} ${post.excerpt} ${post.tags.join(" ")}`.toLowerCase().includes(needle);
       return matchesTag && matchesQuery;
     });
@@ -88,8 +84,8 @@ export default function BlogPage() {
         description="Practical observations on applied AI, resilient products, and the technology choices behind them."
         aside={(
           <div className="journal-heading-aside">
-            <p className="issue-count">{posts.length || 10}<span>field notes</span></p>
-            <Link className="write-link" to="/blog/manage"><Icon name="plus" size={15} /> Write</Link>
+            <p className="issue-count">{posts.length}<span>field notes</span></p>
+            {isAdmin && <Link className="write-link" to="/blog/manage"><Icon name="plus" size={15} /> New article</Link>}
           </div>
         )}
       />
@@ -105,27 +101,44 @@ export default function BlogPage() {
             value={query}
           />
         </label>
-        <div className="filter-row" aria-label="Filter articles by topic">
+        <div className="journal-filters">
+        <div className="filter-row filter-row--wrap" role="group" aria-label="Filter articles by topic">
           {tags.map((tag) => (
             <button
               className={activeTag === tag ? "is-active" : ""}
-              key={tag}
-              onClick={() => setActiveTag(tag)}
+              aria-pressed={activeTag === tag}
+              key={tag ?? "all-filter"}
+              onClick={() => { setActiveTag(tag); setShowOthers(false); }}
               type="button"
             >
-              {tag}
+              {tag ?? "All"}
             </button>
           ))}
+          <button type="button" className={`others-filter ${showOthers || customActive ? "is-active" : ""}`}
+            aria-expanded={showOthers} aria-controls="journal-custom-topics" onClick={() => setShowOthers((current) => !current)}>
+            Others{customActive && <span> · {activeTag}</span>} <Icon name="chevron" size={14} />
+          </button>
+        </div>
+        <div id="journal-custom-topics" className="custom-topic-filters" hidden={!showOthers}>
+          <p>Custom topics <span>{customTopics.length}</span></p>
+          {customTopics.length ? <div className="filter-row filter-row--wrap" role="group" aria-label="Filter by custom topic">
+            {customTopics.map((tag) => <button key={topicKey(tag)} type="button"
+              className={topicKey(activeTag ?? "") === topicKey(tag) ? "is-active" : ""}
+              aria-pressed={topicKey(activeTag ?? "") === topicKey(tag)} onClick={() => setActiveTag(tag)}>{tag}</button>)}
+          </div> : <small>{loading ? "Loading topics..." : "No custom topics yet."}</small>}
+        </div>
         </div>
       </div>
 
-      {loading && <LoadingState label="Fetching field notes" />}
-      {error && <ErrorState message={error} />}
+      {loading && !data && <LoadingState label="Fetching field notes" />}
+      {error && <ErrorState message={error} onRetry={reload} />}
+      {loading && data && <p role="status">Refreshing articles...</p>}
 
-      {!loading && !error && filteredPosts.length > 0 && (
+      {filteredPosts.length > 0 && (
         <div className="posts-grid">
           {filteredPosts.map((post, index) => (
-            <PostCard featured={index === 0 && !query && activeTag === "All"} key={post.slug} post={post} />
+            <PostCard featured={index === 0 && !query && activeTag === null} key={post.slug} post={post}
+              onDeleted={(slug) => setPosts((current) => current.filter((item) => item.slug !== slug))} />
           ))}
         </div>
       )}
