@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { mediaUrl } from "../api";
 import Icon from "./Icon";
+import AttachmentList from "./AttachmentList";
 
 const imageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const isImage = (file) => imageTypes.includes(file.type) || (!file.type && /\.(jpe?g|png|webp|gif)$/i.test(file.name));
@@ -147,17 +148,7 @@ export default function ArticleUploads({ banner, attachments, busy, title, subti
     <div className="upload-section">
       <div className="upload-section__heading"><div><h3>Additional photos & files</h3><p>Shown below your article, in this order.</p></div><span className="upload-label">{attachmentCount}/10</span></div>
       <Dropzone purpose="attachment" disabled={busy || attachmentCount >= 10} onFiles={addFiles} />
-      {attachments.length > 0 && <ul className="upload-list">
-        {attachments.map((file, index) => <li key={file.url}>
-          <span className="upload-file-icon">{file.media_type.startsWith("image/") ? <img src={mediaUrl(file)} alt="" /> : <Icon name="file" size={24} />}</span>
-          <div className="upload-file-info"><strong>{file.name}</strong><small>{fileSize(file.size)} · <span className="upload-ready">Ready</span></small></div>
-          <div className="upload-file-actions">
-            <button type="button" className="upload-icon-button" disabled={index === 0} aria-label={`Move ${file.name} up`} title="Move up" onClick={() => onMoveAttachment(file.url, -1)}><Icon name="up" size={17} /></button>
-            <button type="button" className="upload-icon-button" disabled={index === attachments.length - 1} aria-label={`Move ${file.name} down`} title="Move down" onClick={() => onMoveAttachment(file.url, 1)}><Icon name="down" size={17} /></button>
-            <button type="button" className="upload-icon-button" aria-label={`Remove ${file.name}`} title="Remove file" onClick={() => onRemoveAttachment(file.url)}><Icon name="close" size={17} /></button>
-          </div>
-        </li>)}
-      </ul>}
+      {attachments.length > 0 && <AttachmentList attachments={attachments} busy={busy} onMove={onMoveAttachment} onRemove={onRemoveAttachment} formatSize={fileSize} />}
     </div>
 
     {messages.length > 0 && <div className="upload-feedback" role="alert"><strong>Some files could not be added</strong><ul>{messages.map((message, index) => <li key={index}>{message}</li>)}</ul><button type="button" className="text-button" onClick={() => setMessages([])}>Dismiss</button></div>}

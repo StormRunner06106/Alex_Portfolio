@@ -24,6 +24,7 @@ async function request(path, { timeoutMs = 0, ...options } = {}) {
       try {
         const body = await response.json();
         if (typeof body.detail === "string") detail = body.detail;
+        else if (Array.isArray(body.detail)) detail = body.detail.map((item) => item.msg?.replace(/^Value error, /, "")).filter(Boolean).join(" ") || detail;
       } catch { /* Keep the fallback for proxy errors. */ }
       const error = new Error(detail);
       error.status = response.status;
@@ -64,8 +65,19 @@ async function readRequest(path, options = {}) {
 }
 
 export const getProfile = (signal) => request("/api/profile", { signal });
-export const getExperience = (signal) => request("/api/experience", { signal });
-export const getSkills = (signal) => request("/api/skills", { signal });
+export const getExperience = (signal) => readRequest("/api/experience", { signal });
+export const getSkills = (signal) => readRequest("/api/skills", { signal });
+const saveContent = (path, method, payload, token) => request(path, {
+  method, headers: { Authorization: `Bearer ${token}` },
+  ...(payload === undefined ? {} : { body: JSON.stringify(payload) }),
+});
+export const createExperience = (payload, token) => saveContent("/api/experience", "POST", payload, token);
+export const updateExperience = (id, payload, token) => saveContent(`/api/experience/${encodeURIComponent(id)}`, "PUT", payload, token);
+export const deleteExperience = (id, token) => saveContent(`/api/experience/${encodeURIComponent(id)}`, "DELETE", undefined, token);
+export const createSkillCategory = (payload, token) => saveContent("/api/skills/categories", "POST", payload, token);
+export const updateSkillCategory = (id, payload, token) => saveContent(`/api/skills/categories/${encodeURIComponent(id)}`, "PUT", payload, token);
+export const deleteSkillCategory = (id, token) => saveContent(`/api/skills/categories/${encodeURIComponent(id)}`, "DELETE", undefined, token);
+export const updateSkillsOverview = (payload, token) => saveContent("/api/skills", "PATCH", payload, token);
 export const getPosts = (signal) => readRequest("/api/posts", { signal });
 export const getPost = (slug, signal) => readRequest(`/api/posts/${slug}`, { signal });
 export const mediaUrl = (media) => `${API_BASE}${media.url}`;

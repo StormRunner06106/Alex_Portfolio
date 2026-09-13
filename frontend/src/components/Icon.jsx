@@ -1,4 +1,5 @@
 const paths = {
+  grip: <path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01" strokeWidth="3" />,
   upload: <path d="M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5" />,
   photo: <><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8" cy="8" r="1.5" /><path d="m3 17 6-6 4 4 3-3 5 5" /></>,
   file: <><path d="M14 2H5v20h14V7l-5-5Zm0 0v6h5M8 13h8M8 17h5" /></>,

@@ -36,3 +36,24 @@ create table if not exists public.article_media (
 alter table public.article_media enable row level security;
 revoke all on table public.article_media from anon, authenticated;
 grant select, insert, update, delete on table public.article_media to service_role;
+
+-- Persist removal intent before article changes so Dropbox outages can be retried.
+create table if not exists public.article_media_deletions (
+  upload_id text primary key check (upload_id ~ '^[a-f0-9]{32}$'),
+  metadata jsonb not null,
+  created_at timestamptz not null default now()
+);
+alter table public.article_media_deletions enable row level security;
+revoke all on table public.article_media_deletions from anon, authenticated;
+grant select, insert, update, delete on table public.article_media_deletions to service_role;
+
+-- Editable portfolio sections. Version checks prevent concurrent document writes
+-- from silently replacing each other's changes.
+create table if not exists public.portfolio_content (
+  key text primary key check (key in ('experience', 'skills')),
+  payload jsonb not null,
+  version bigint not null default 1
+);
+alter table public.portfolio_content enable row level security;
+revoke all on table public.portfolio_content from anon, authenticated;
+grant select, insert, update, delete on table public.portfolio_content to service_role;

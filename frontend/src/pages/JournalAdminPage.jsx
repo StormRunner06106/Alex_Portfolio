@@ -38,6 +38,7 @@ function ArticleForm({ slug }) {
   const [articleText, setArticleText] = useState("");
   const [banner, setBanner] = useState(null);
   const [attachments, setAttachments] = useState([]);
+  const discardedUploads = useRef(new Set());
   const [uploading, setUploading] = useState(false);
   const [customTopic, setCustomTopic] = useState("");
   const [topicMessage, setTopicMessage] = useState("");
@@ -121,6 +122,7 @@ function ArticleForm({ slug }) {
       content: article,
       banner,
       attachments,
+      discarded_uploads: [...discardedUploads.current],
     };
 
     setStatus({ type: "sending", message: slug ? "Saving changes..." : "Publishing..." });
@@ -136,17 +138,20 @@ function ArticleForm({ slug }) {
   async function uploadFile(file, purpose, options) {
     const uploaded = await uploadMedia(file, purpose, token, options);
     if (options.signal.aborted) return;
-    if (purpose === "banner") setBanner(uploaded);
+    if (purpose === "banner") setBanner((previous) => {
+      if (previous) discardedUploads.current.add(previous.url);
+      return uploaded;
+    });
     else setAttachments((current) => [...current, uploaded]);
   }
 
-  function moveAttachment(url, direction) {
+  function moveAttachment(url, targetUrl) {
     setAttachments((current) => {
       const index = current.findIndex((file) => file.url === url);
-      const next = index + direction;
-      if (index < 0 || next < 0 || next >= current.length) return current;
+      const next = current.findIndex((file) => file.url === targetUrl);
+      if (index < 0 || next < 0 || index === next) return current;
       const ordered = [...current];
-      [ordered[index], ordered[next]] = [ordered[next], ordered[index]];
+      ordered.splice(next, 0, ordered.splice(index, 1)[0]);
       return ordered;
     });
   }
@@ -273,8 +278,15 @@ function ArticleForm({ slug }) {
           <p className="section-help">Use + Section to add a heading and a new section. Each section gets a divider and an automatic uppercase drop cap on its opening paragraph.</p>
           <ArticleUploads banner={banner} attachments={attachments} busy={status.type === "sending"}
             title={post.title} subtitle={post.excerpt} onPendingChange={setUploading} onMoveAttachment={moveAttachment}
-            onUpload={uploadFile} onRemoveBanner={() => setBanner(null)}
-            onRemoveAttachment={(url) => setAttachments((current) => current.filter((file) => file.url !== url))} />
+            onUpload={uploadFile} onRemoveBanner={() => {
+              if (banner) discardedUploads.current.add(banner.url);
+              setBanner(null);
+            }}
+            onRemoveAttachment={(url) => {
+              discardedUploads.current.add(url);
+              setAttachments((current) => current.filter((file) => file.url !== url));
+            }} />
+          <p className="section-help">Removed photos and files are deleted from storage when you {slug ? "save changes" : "publish"}.</p>
 
           <div className="publisher-submit">
             <Link className="text-button" to={slug ? `/blog/${slug}` : "/blog"}>Cancel</Link>

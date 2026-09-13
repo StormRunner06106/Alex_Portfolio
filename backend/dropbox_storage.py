@@ -4,7 +4,7 @@ import re
 from functools import lru_cache
 
 import dropbox
-from dropbox.exceptions import AuthError, DropboxException
+from dropbox.exceptions import ApiError, AuthError, DropboxException
 from fastapi import HTTPException
 from requests.exceptions import RequestException
 
@@ -58,3 +58,17 @@ def download(file_id: str, limit: int) -> bytes:
         raise HTTPException(503, "Dropbox needs to be reconnected by the site owner.") from exc
     except (DropboxException, RequestException) as exc:
         raise HTTPException(502, "This file is temporarily unavailable from Dropbox. Please retry.") from exc
+
+
+def delete(file_id: str) -> None:
+    try:
+        get_dropbox().files_delete_v2(file_id)
+    except AuthError as exc:
+        raise HTTPException(503, "Dropbox needs to be reconnected by the site owner.") from exc
+    except ApiError as exc:
+        # A retry may follow a successful Dropbox delete and failed database cleanup.
+        if exc.error.is_path_lookup() and exc.error.get_path_lookup().is_not_found():
+            return
+        raise HTTPException(502, "Dropbox could not delete this file. Deletion will be retried.") from exc
+    except (DropboxException, RequestException) as exc:
+        raise HTTPException(502, "Dropbox could not delete this file. Deletion will be retried.") from exc

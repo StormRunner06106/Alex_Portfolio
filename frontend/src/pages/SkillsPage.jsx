@@ -1,24 +1,21 @@
-import { useEffect, useState } from "react";
-import { getSkills } from "../api";
+import { useAdmin } from "../components/AdminSession";
+import usePortfolioResource from "../usePortfolioResource";
+import { ContentActions, DeleteContentDialog, SkillCategoryEditor, SkillsOverviewEditor } from "../components/PortfolioEditors";
+import { useState } from "react";
+import { deleteSkillCategory, getSkills } from "../api";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
 import { ErrorState, LoadingState } from "../components/Status";
 
 export default function SkillsPage() {
-  const [skills, setSkills] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    const controller = new AbortController();
-    getSkills(controller.signal)
-      .then(setSkills)
-      .catch((requestError) => {
-        if (requestError.name !== "AbortError") setError(requestError.message);
-      })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
-  }, []);
+  const { isAdmin } = useAdmin();
+  const { data: skills, loading, error, reload, setData } = usePortfolioResource(getSkills);
+  const [editor, setEditor] = useState(null);
+  function savedCategory(record) {
+    setData((current) => ({ ...current, categories: current.categories.some((item) => item.id === record.id)
+      ? current.categories.map((item) => item.id === record.id ? record : item) : [...current.categories, record] }));
+    setEditor(null);
+  }
 
   return (
     <section className="content-page container">
@@ -33,12 +30,13 @@ export default function SkillsPage() {
         }
       />
 
-      {loading && <LoadingState label="Unpacking the toolkit" />}
-      {error && <ErrorState message={error} />}
+      {isAdmin && <div className="portfolio-admin-toolbar"><p>Shape your toolkit as your skills evolve.</p><div><button className="button" type="button" disabled={!skills} onClick={() => setEditor({ kind: "overview" })}>Edit overview</button><button className="button button--primary" type="button" disabled={!skills} onClick={() => setEditor({ kind: "category", item: null })}><Icon name="plus" size={17} /> Add category</button></div></div>}
+      {loading && !skills && <LoadingState label="Unpacking the toolkit" />}
+      {error && <ErrorState message={error} onRetry={reload} retrying={loading} />}
 
       {skills && (
         <>
-          <div className="principles-panel reveal">
+          {skills.principles.length > 0 && <div className="principles-panel reveal">
             <p className="eyebrow">How I work</p>
             <div className="principles-list">
               {skills.principles.map((principle, index) => (
@@ -48,13 +46,14 @@ export default function SkillsPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
 
           <div className="skills-grid">
+            {!skills.categories.length && <p className="state-card">No skill categories yet.</p>}
             {skills.categories.map((category, index) => (
               <article
                 className={`skill-card skill-card--${category.accent} reveal`}
-                key={category.name}
+                key={category.id}
                 style={{ "--delay": `${index * 55}ms` }}
               >
                 <div className="skill-card__top">
@@ -68,11 +67,15 @@ export default function SkillsPage() {
                     <span key={item}>{item}</span>
                   ))}
                 </div>
+                {isAdmin && <ContentActions label={category.name} onEdit={() => setEditor({ kind: "category", item: category })} onDelete={() => setEditor({ kind: "delete", item: category })} />}
               </article>
             ))}
           </div>
         </>
       )}
+      {editor?.kind === "category" && <SkillCategoryEditor item={editor.item} onClose={() => setEditor(null)} onSaved={savedCategory} />}
+      {editor?.kind === "overview" && <SkillsOverviewEditor skills={skills} onClose={() => setEditor(null)} onSaved={(record) => { setData((current) => ({ ...current, intro: record.intro, principles: record.principles })); setEditor(null); }} />}
+      {editor?.kind === "delete" && <DeleteContentDialog label={editor.item.name} onClose={() => setEditor(null)} onDelete={(token) => deleteSkillCategory(editor.item.id, token)} onDeleted={() => { setData((current) => ({ ...current, categories: current.categories.filter((item) => item.id !== editor.item.id) })); setEditor(null); }} />}
     </section>
   );
 }

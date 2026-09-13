@@ -27,7 +27,7 @@ from pydantic import BaseModel, EmailStr, Field
 from starlette.concurrency import run_in_threadpool
 from httpx import TransportError
 from supabase import Client, ClientOptions, PostgrestAPIError, create_client
-from backend import dropbox_storage
+from backend import dropbox_storage, media_cleanup, portfolio_content
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -56,6 +56,7 @@ app = FastAPI(
     title="Alex Herlan Portfolio API",
     description="Supabase-ready content and contact delivery for Alex Herlan's portfolio.",
     version="1.1.0",
+    lifespan=media_cleanup.lifespan,
 )
 
 origins = [
@@ -94,6 +95,7 @@ class NewPostPayload(BaseModel):
     content: dict[str, Any]
     banner: ArticleMedia | None = None
     attachments: list[ArticleMedia] = Field(default_factory=list, max_length=10)
+    discarded_uploads: list[str] = Field(default_factory=list, max_length=100, exclude=True)
 
 
 @lru_cache(maxsize=8)
@@ -260,14 +262,7 @@ def profile() -> dict[str, Any]:
     return read_data("profile.json")
 
 
-@app.get("/api/experience")
-def experience() -> list[dict[str, Any]]:
-    return read_data("experience.json")
-
-
-@app.get("/api/skills")
-def skills() -> dict[str, Any]:
-    return read_data("skills.json")
+portfolio_content.register_routes(app, require_admin)
 
 
 @app.post("/api/auth/login")
@@ -425,7 +420,15 @@ def validated_article(payload: NewPostPayload, slug: str) -> dict[str, Any]:
         if media is None:
             return None
         stored = uploaded_media(media["url"].rsplit("/", 1)[-1])
-        if ArticleMedia.model_validate(stored).model_dump() != media:
+        canonical = ArticleMedia.model_validate(stored).model_dump()
+        # An editor can remain open while its local files are migrated to Dropbox.
+        # The upload URL and file details are unchanged; resolve the new storage
+        # fields from the server without trusting a client-supplied Dropbox ID.
+        if (media["storage"] is None and media["dropbox_file_id"] is None
+                and canonical["storage"] == "dropbox" and canonical["dropbox_file_id"]):
+            media = {**media, "storage": canonical["storage"],
+                     "dropbox_file_id": canonical["dropbox_file_id"]}
+        if canonical != media:
             raise HTTPException(status_code=422, detail="An attachment is invalid. Please upload it again.")
         return stored
     article["banner"] = canonical_media(article["banner"])
@@ -451,11 +454,13 @@ def save_local_posts(records: list[dict[str, Any]]) -> None:
 
 
 @app.post("/api/posts", status_code=status.HTTP_201_CREATED)
+@media_cleanup.serialized
 def create_post(
     payload: NewPostPayload, _: None = Depends(require_admin)
 ) -> dict[str, Any]:
     slug = post_slug(payload.title)
     article = validated_article(payload, slug)
+    media_cleanup.enqueue_urls(payload.discarded_uploads)
 
     client = get_supabase()
     if client is not None:
@@ -482,6 +487,7 @@ def create_post(
             ) from exc
         if not created.data:
             raise HTTPException(status_code=502, detail="Supabase did not return the new article.")
+        media_cleanup.cleanup_pending()
         return created.data[0]
 
     with POSTS_LOCK:
@@ -494,10 +500,12 @@ def create_post(
         current_posts.append(article)
         save_local_posts(current_posts)
 
+    media_cleanup.cleanup_pending()
     return article
 
 
 @app.put("/api/posts/{slug}")
+@media_cleanup.serialized
 def update_post(
     slug: str, payload: NewPostPayload, _: None = Depends(require_admin)
 ) -> dict[str, Any]:
@@ -505,6 +513,10 @@ def update_post(
         raise HTTPException(status_code=404, detail="Post not found")
     # Keep published URLs stable when an admin changes the title.
     article = validated_article(payload, slug)
+    previous = post_by_slug(slug)
+    media_cleanup.enqueue_urls(payload.discarded_uploads)
+    retained = {m["url"] for m in media_cleanup.media_items(article)}
+    media_cleanup.enqueue([m for m in media_cleanup.media_items(previous) if m["url"] not in retained])
     client = get_supabase()
     if client is not None:
         try:
@@ -513,6 +525,7 @@ def update_post(
             raise HTTPException(status_code=502, detail="The article could not be updated. Please try again.") from exc
         if not response.data:
             raise HTTPException(status_code=404, detail="Post not found")
+        media_cleanup.cleanup_pending()
         return response.data[0]
 
     with POSTS_LOCK:
@@ -521,14 +534,21 @@ def update_post(
             if existing["slug"] == slug:
                 records[index] = {**existing, **article}
                 save_local_posts(records)
-                return records[index]
-    raise HTTPException(status_code=404, detail="Post not found")
+                saved = records[index]
+                break
+        else:
+            raise HTTPException(status_code=404, detail="Post not found")
+    media_cleanup.cleanup_pending()
+    return saved
 
 
 @app.delete("/api/posts/{slug}")
+@media_cleanup.serialized
 def delete_post(slug: str, _: None = Depends(require_admin)) -> dict[str, bool]:
     if not re.fullmatch(r"[a-z0-9-]+", slug):
         raise HTTPException(status_code=404, detail="Post not found")
+    previous = post_by_slug(slug)
+    media_cleanup.enqueue(media_cleanup.media_items(previous))
     client = get_supabase()
     if client is not None:
         try:
@@ -537,6 +557,7 @@ def delete_post(slug: str, _: None = Depends(require_admin)) -> dict[str, bool]:
             raise HTTPException(status_code=502, detail="The article could not be deleted. Please try again.") from exc
         if not response.data:
             raise HTTPException(status_code=404, detail="Post not found")
+        media_cleanup.cleanup_pending()
         return {"deleted": True}
 
     with POSTS_LOCK:
@@ -545,6 +566,7 @@ def delete_post(slug: str, _: None = Depends(require_admin)) -> dict[str, bool]:
         if len(remaining) == len(records):
             raise HTTPException(status_code=404, detail="Post not found")
         save_local_posts(remaining)
+    media_cleanup.cleanup_pending()
     return {"deleted": True}
 
 

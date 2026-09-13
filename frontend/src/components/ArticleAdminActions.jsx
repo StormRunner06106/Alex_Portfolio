@@ -33,7 +33,7 @@ export default function ArticleAdminActions({ post, onDeleted }) {
       <Icon name="trash" size={16} /> Delete
     </button>
     {confirming && <Modal title="Delete article?" onClose={() => setConfirming(false)} busy={busy}>
-      <p>“{post.title}” will be removed from the journal. This cannot be undone.</p>
+      <p>“{post.title}” and its uploaded files will be deleted. Files used by another article will be kept. This cannot be undone.</p>
       {error && <p className="form-status form-status--error" role="alert">{error}</p>}
       <div className="dialog-actions">
         <button autoFocus className="button" type="button" disabled={busy} onClick={() => setConfirming(false)}>Cancel</button>

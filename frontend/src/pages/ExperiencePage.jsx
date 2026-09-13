@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { getExperience } from "../api";
+import { useAdmin } from "../components/AdminSession";
+import usePortfolioResource from "../usePortfolioResource";
+import { ContentActions, DeleteContentDialog, ExperienceEditor } from "../components/PortfolioEditors";
+import { useMemo, useState } from "react";
+import { deleteExperience, getExperience } from "../api";
 import Icon from "../components/Icon";
 import PageHeader from "../components/PageHeader";
 import { ErrorState, LoadingState } from "../components/Status";
@@ -33,7 +36,7 @@ function durationLabel(start, end) {
   return parts.join(" ") || "1 mo";
 }
 
-function TimelineItem({ item, index, isExpanded, onToggle }) {
+function TimelineItem({ item, index, isExpanded, onToggle, actions }) {
   const isCurrent = !item.end;
   const year = item.start.slice(0, 4);
 
@@ -46,6 +49,7 @@ function TimelineItem({ item, index, isExpanded, onToggle }) {
         <span />
       </div>
       <div className="timeline-card">
+        {actions}
         <button
           className="timeline-card__header"
           onClick={onToggle}
@@ -110,24 +114,19 @@ function TimelineItem({ item, index, isExpanded, onToggle }) {
 }
 
 export default function ExperiencePage() {
-  const [experience, setExperience] = useState([]);
+  const { isAdmin } = useAdmin();
+  const { data, loading, error, reload, setData } = usePortfolioResource(getExperience);
+  const experience = data ?? [];
   const [expandedId, setExpandedId] = useState("independent");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    const controller = new AbortController();
-    getExperience(controller.signal)
-      .then(setExperience)
-      .catch((requestError) => {
-        if (requestError.name !== "AbortError") setError(requestError.message);
-      })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
-  }, []);
+  const [editor, setEditor] = useState(null);
+  function saved(record) {
+    setData((current) => [...current.filter((item) => item.id !== record.id), record].sort((a, b) => b.start.localeCompare(a.start)));
+    setExpandedId(record.id);
+    setEditor(null);
+  }
 
   const visibleYears = useMemo(() => {
-    if (!experience.length) return "2013 — now";
+    if (!experience.length) return "Your timeline";
     return `${experience.at(-1).start.slice(0, 4)} — now`;
   }, [experience]);
 
@@ -139,19 +138,22 @@ export default function ExperiencePage() {
         description="Product engineering, critical operations, and technical leadership—connected by a habit of making complicated systems easier to use."
         aside={
           <div className="heading-stat">
-            <strong>{experience.length || "6"}</strong>
+            <strong>{experience.length}</strong>
             <span>career chapters<br />{visibleYears}</span>
           </div>
         }
       />
 
-      {loading && <LoadingState label="Mapping the timeline" />}
-      {error && <ErrorState message={error} />}
+      {isAdmin && <div className="portfolio-admin-toolbar"><p>Keep your career timeline up to date.</p><button type="button" className="button button--primary" disabled={!data} onClick={() => setEditor({ kind: "edit", item: null })}><Icon name="plus" size={17} /> Add experience</button></div>}
+      {loading && !data && <LoadingState label="Mapping the timeline" />}
+      {error && <ErrorState message={error} onRetry={reload} retrying={loading} />}
 
-      {!loading && !error && (
+      {data && (
         <div className="timeline">
+          {!experience.length && <p className="state-card">No experience entries yet.</p>}
           {experience.map((item, index) => (
             <TimelineItem
+              actions={isAdmin && <ContentActions label={`${item.role} at ${item.company}`} onEdit={() => setEditor({ kind: "edit", item })} onDelete={() => setEditor({ kind: "delete", item })} />}
               index={index}
               isExpanded={expandedId === item.id}
               item={item}
@@ -161,6 +163,8 @@ export default function ExperiencePage() {
           ))}
         </div>
       )}
+      {editor?.kind === "edit" && <ExperienceEditor item={editor.item} onClose={() => setEditor(null)} onSaved={saved} />}
+      {editor?.kind === "delete" && <DeleteContentDialog label={`${editor.item.role} at ${editor.item.company}`} onClose={() => setEditor(null)} onDelete={(token) => deleteExperience(editor.item.id, token)} onDeleted={() => { setData((current) => current.filter((item) => item.id !== editor.item.id)); setEditor(null); }} />}
     </section>
   );
 }

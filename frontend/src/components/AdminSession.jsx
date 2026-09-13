@@ -108,12 +108,14 @@ export default function AdminProvider({ children }) {
     {open && <Modal title={isAdmin ? "Admin account" : "Admin sign in"} onClose={close} busy={busy}>
       {isAdmin ? <div className="admin-account">
         <span className="publisher-badge"><span /> Admin</span>
-        <p>You can create, edit, and delete journal articles.</p>
+        <p>Manage your articles, experience, and skills.</p>
         <Link className="button button--primary" to="/blog/manage" onClick={close}><Icon name="plus" size={18} /> New article</Link>
         <Link className="button" to="/blog" onClick={close}>Manage articles</Link>
+        <Link className="button" to="/experience" onClick={close}>Manage experience</Link>
+        <Link className="button" to="/skills" onClick={close}>Manage skills</Link>
         <button className="text-button" type="button" onClick={signOut}><Icon name="logout" size={18} /> Sign out</button>
       </div> : <form className="admin-signin" onSubmit={signIn}>
-        <p>Enter the admin password to manage journal articles.</p>
+        <p>Enter the admin password to manage your website content.</p>
         <label className="publisher-field">
           <span>Admin password</span>
           <input autoFocus autoComplete="current-password" type="password" required maxLength={200}

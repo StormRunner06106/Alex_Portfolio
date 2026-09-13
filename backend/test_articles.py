@@ -10,7 +10,8 @@ from fastapi.testclient import TestClient
 from PIL import Image
 from httpx import ReadTimeout, RemoteProtocolError
 from supabase import PostgrestAPIError
-from dropbox.exceptions import AuthError
+from dropbox.exceptions import ApiError, AuthError
+from dropbox.files import DeleteError, LookupError
 
 from backend import main
 
@@ -126,6 +127,8 @@ class ArticleMediaTests(unittest.TestCase):
         table = client.table.return_value
         payload = self.article_payload()
         table.update.return_value.eq.return_value.execute.return_value.data = [{**payload, "slug": "original-url"}]
+        table.select.return_value.eq.return_value.limit.return_value.retry.return_value.execute.return_value.data = [{**payload, "slug": "original-url"}]
+        table.select.return_value.order.return_value.retry.return_value.execute.return_value.data = []
         table.delete.return_value.eq.return_value.execute.return_value.data = [{"slug": "original-url"}]
         with patch.object(main, "get_supabase", return_value=client):
             updated = self.client.put("/api/posts/original-url", json=payload, headers=self.headers)
@@ -252,6 +255,118 @@ class ArticleMediaTests(unittest.TestCase):
         self.assertEqual(migrated["url"], media["url"])
         self.assertEqual(migrated["dropbox_file_id"], "id:migrated_file")
         self.assertEqual((main.UPLOAD_DIR / media["url"].rsplit("/", 1)[-1]).read_bytes(), b"original notes")
+
+    def test_edit_open_before_migration_keeps_old_media_and_new_uploads(self):
+        from backend.migrate_media_dropbox import migrate
+        image = io.BytesIO()
+        Image.new("RGB", (20, 20), "green").save(image, format="PNG")
+        banner = self.upload(image.getvalue(), "banner").json()
+        attachment = self.upload(b"original notes", name="notes.txt").json()
+        draft = {**self.article_payload(), "banner": banner, "attachments": [attachment]}
+        created = self.client.post("/api/posts", headers=self.headers, json=draft)
+        self.assertEqual(created.status_code, 201)
+        path = "/api/posts/an-editable-article"
+        dropbox = MagicMock()
+        dropbox.files_upload.side_effect = [
+            MagicMock(id="id:migrated_banner"), MagicMock(id="id:migrated_attachment"),
+            MagicMock(id="id:new_attachment"),
+        ]
+        with patch.object(main.dropbox_storage, "get_dropbox", return_value=dropbox):
+            migrate(apply=True)
+            with patch.dict(os.environ, {"JOURNAL_MEDIA_STORAGE": "dropbox"}):
+                uploaded = self.upload(b"new notes", name="new.txt")
+            self.assertEqual(uploaded.status_code, 201)
+            draft["attachments"].append(uploaded.json())
+            # The browser still has the pre-migration metadata for the old files.
+            draft["title"] = "An edited article after migration"
+            saved = self.client.put(path, headers=self.headers, json=draft)
+        self.assertEqual(saved.status_code, 200, saved.text)
+        result = self.client.get(path).json()
+        self.assertEqual(result["title"], draft["title"])
+        self.assertEqual(result["banner"]["dropbox_file_id"], "id:migrated_banner")
+        self.assertEqual([m["dropbox_file_id"] for m in result["attachments"]],
+                         ["id:migrated_attachment", "id:new_attachment"])
+        self.assertEqual(result["banner"]["url"], banner["url"])
+        self.assertEqual(result["attachments"][0]["url"], attachment["url"])
+        # Compatibility must not accept altered file details or a substituted ID.
+        for changes in ({"size": 999}, {"name": "different.txt"},
+                        {"media_type": "image/png"}, {"dropbox_file_id": "id:other"},
+                        {"storage": "dropbox"}):
+            with self.subTest(changes=changes):
+                invalid = {**draft, "attachments": [{**attachment, **changes}]}
+                rejected = self.client.put(path, headers=self.headers, json=invalid)
+                self.assertEqual(rejected.status_code, 422)
+
+    def test_removal_deletes_dropbox_files_after_save_and_preserves_shared_media(self):
+        dropbox = MagicMock()
+        dropbox.files_upload.side_effect = [MagicMock(id=f"id:file_{i}") for i in range(4)]
+        image = io.BytesIO()
+        Image.new("RGB", (8, 8), "blue").save(image, format="PNG")
+        with patch.dict(os.environ, {"JOURNAL_MEDIA_STORAGE": "dropbox"}), patch.object(main.dropbox_storage, "get_dropbox", return_value=dropbox):
+            banner = self.upload(image.getvalue(), "banner").json()
+            attachment = self.upload(b"shared notes").json()
+            replacement = self.upload(image.getvalue(), "banner").json()
+            discarded = self.upload(b"removed before publishing").json()
+            payload = {**self.article_payload(), "banner": banner, "attachments": [attachment]}
+            self.assertEqual(self.client.post("/api/posts", headers=self.headers, json=payload).status_code, 201)
+            second = {**self.article_payload(), "title": "Another article with shared notes", "attachments": [attachment]}
+            self.assertEqual(self.client.post("/api/posts", headers=self.headers, json=second).status_code, 201)
+            edited = {**payload, "banner": replacement, "attachments": [], "discarded_uploads": [discarded["url"]]}
+            self.assertEqual(self.client.put("/api/posts/an-editable-article", headers=self.headers, json=edited).status_code, 200)
+            deleted = [call.args[0] for call in dropbox.files_delete_v2.call_args_list]
+            self.assertCountEqual(deleted, [banner["dropbox_file_id"], discarded["dropbox_file_id"]])
+            self.assertEqual(self.client.get(banner["url"]).status_code, 404)
+            self.assertEqual(main.uploaded_media(attachment["url"].rsplit("/", 1)[-1]), attachment)
+            self.assertEqual(self.client.delete("/api/posts/another-article-with-shared-notes", headers=self.headers).status_code, 200)
+            self.assertEqual(self.client.delete("/api/posts/an-editable-article", headers=self.headers).status_code, 200)
+            self.assertCountEqual([call.args[0] for call in dropbox.files_delete_v2.call_args_list],
+                                 [m["dropbox_file_id"] for m in [banner, attachment, replacement, discarded]])
+            self.assertEqual(main.media_cleanup.pending(), [])
+
+    def test_failed_file_deletion_is_durable_and_retryable_after_article_deleted(self):
+        dropbox = MagicMock()
+        dropbox.files_upload.return_value.id = "id:retry_delete"
+        dropbox.files_delete_v2.side_effect = AuthError("request", None)
+        with patch.dict(os.environ, {"JOURNAL_MEDIA_STORAGE": "dropbox"}), patch.object(main.dropbox_storage, "get_dropbox", return_value=dropbox):
+            media = self.upload(b"retry notes").json()
+            payload = {**self.article_payload(), "attachments": [media]}
+            self.client.post("/api/posts", headers=self.headers, json=payload)
+            response = self.client.delete("/api/posts/an-editable-article", headers=self.headers)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(len(main.media_cleanup.pending()), 1)
+            self.assertEqual(self.client.get("/api/auth/session", headers=self.headers).status_code, 200)
+            self.assertEqual(main.uploaded_media(media["url"].rsplit("/", 1)[-1]), media)
+            # Dropbox already removed the file, e.g. before a database outage.
+            dropbox.files_delete_v2.side_effect = ApiError("request", DeleteError.path_lookup(LookupError.not_found), None, None)
+            main.media_cleanup.cleanup_pending()
+            self.assertEqual(main.media_cleanup.pending(), [])
+            self.assertEqual(self.client.get(media["url"]).status_code, 404)
+
+    def test_failed_article_save_does_not_delete_referenced_file(self):
+        media = self.upload(b"must survive failed save").json()
+        payload = {**self.article_payload(), "attachments": [media]}
+        self.client.post("/api/posts", headers=self.headers, json=payload)
+        with patch.object(main, "save_local_posts", side_effect=OSError("disk unavailable")):
+            with self.assertRaises(OSError):
+                self.client.put("/api/posts/an-editable-article", headers=self.headers, json=self.article_payload())
+        main.read_data.cache_clear()
+        main.media_cleanup.cleanup_pending()
+        self.assertEqual(self.client.get(media["url"]).content, b"must survive failed save")
+        self.assertEqual(len(main.media_cleanup.pending()), 1)
+        self.assertEqual(self.client.put("/api/posts/an-editable-article", headers=self.headers, json=self.article_payload()).status_code, 200)
+        self.assertEqual(self.client.get(media["url"]).status_code, 404)
+        self.assertEqual(main.media_cleanup.pending(), [])
+
+    def test_removing_new_upload_before_publish_cleans_it_after_success(self):
+        media = self.upload(b"discarded draft upload").json()
+        payload = {**self.article_payload(), "discarded_uploads": [media["url"]]}
+        invalid = {**payload, "content": {"type": "doc", "content": []}}
+        self.assertEqual(self.client.post("/api/posts", headers=self.headers, json=invalid).status_code, 422)
+        self.assertEqual(self.client.get(media["url"]).status_code, 200)
+        result = self.client.post("/api/posts", headers=self.headers, json=payload)
+        self.assertEqual(result.status_code, 201)
+        self.assertNotIn("discarded_uploads", result.json())
+        self.assertEqual(self.client.get(media["url"]).status_code, 404)
 
 
 if __name__ == "__main__":
