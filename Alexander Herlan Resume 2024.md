@@ -7,15 +7,15 @@
 
 ## Overview
 
-I am a passionate technophile with over 27 years of hands-on experience in software engineering, web design, database engineering, IT management, computer repair, and user experience design. My primary skills revolve around full-stack Python and Javascript development, with a focus on web application development.
+Senior software engineer with over 27 years of hands-on technology experience spanning software engineering, web design, database engineering, IT management, computer repair, and user experience design. My primary focus is full-stack web application development with Python and JavaScript.
 
-Throughout my career I have constantly honed and expanded my skills with freelance work and side projects to stay up to date on the latest technologies. Lately this has brought me into the world of DevOps, Docker, Kubernetes, and advanced resource management across many systems, and also to begin to explore building Web3, Machine Learning and AI technologies into my work. I hope to take this unique perspective on software engineering into the future and help build the Web3 world of tomorrow that is slowly taking shape around us. My goal—and dream—is to apply my skills in a growth-oriented technology company that shares my enthusiasm and belief that the next big idea is always right around the corner.
+Through professional roles, freelance work, and side projects, I have expanded my skills in DevOps, Docker, Kubernetes, cloud deployment, and resource management. Recent projects include membership platforms, Android applications with machine learning and AI, and financial technology. I continue to explore Web3 and emerging technologies, and I am seeking a software engineering role where I can build reliable applications and contribute across the development lifecycle.
 
 ## Experience
 
 ### Independent Software Developer / Freelancer
 
-*June 2024 – Present*
+*June 2024 - Present*
 
 I develop web and mobile applications for long-term clients sourced through Upwork, agency partnerships, and professional referrals. Working directly with clients and distributed teams, I turn early-stage ideas and complex business requirements into production-ready software. I own projects from discovery and architecture through implementation, cloud deployment, feedback cycles, and ongoing support. Recent work spans membership management, AI-powered safety systems, and financial technology.
 
@@ -23,7 +23,7 @@ I develop web and mobile applications for long-term clients sourced through Upwo
 
 ##### [IIPM.ie](https://iipm.ie)
 
-*April 2025 – March 2026*
+*April 2025 - March 2026*
 
 - Developed a membership platform for the Irish Institute of Pensions Management through an Upwork engagement, collaborating with an Australia-based agency and Daniel Steven.
 - Expanded an initial set of WordPress landing pages into a larger PHP and PostgreSQL platform supporting individual and organisational membership applications, qualification requirements, annual payments, monthly course-progress reviews, and downloadable PDF certificates.
@@ -33,19 +33,18 @@ I develop web and mobile applications for long-term clients sourced through Upwo
 
 ##### [SafeSchoolz](https://heroeyez.com)
 
-*June 2024 – June 2025*
+*June 2024 - June 2025*
 
 - Worked with David Gray, VP of Grays Communications in Los Angeles, to develop a safety platform that detects firearms and communicates potential incidents to first responders.
 - Built the Media Pipe and Aegis Android applications and integrated them with the existing .NET-based HeroEyez portal. Media Pipe detects firearms in device or IP-camera feeds; Aegis receives alerts with screenshots and a one-minute evidence clip, initiates a Twilio-powered call workflow, and forwards incident information to HeroEyez for monitoring and response coordination.
 - Evaluated YOLO before adopting TensorFlow Lite to improve object-detection accuracy within mobile hardware constraints. Trained and tested the model using more than 10,000 firearm images from Roboflow and custom-captured samples.
 - Completed the end-to-end alert workflow and deployed the application in June 2025. Broader commercial rollout was later paused because of market and regulatory constraints.
 
-**Technologies:** Android, Java, Kotlin, object detection, TensorFlow Lite  
-**Source code:** [Media Pipe](https://github.com/StormRunner06106/SS-MediaPipe) · [Aegis](https://github.com/StormRunner06106/SS-Aegis)
+**Technologies:** Android, Java, Kotlin, object detection, TensorFlow Lite
 
 ##### [Equity Funding Source](https://equityfundingsource.com)
 
-*April 2026 – July 2026*
+*April 2026 - July 2026*
 
 - Built a mortgage-lending platform for a Los Angeles-based mortgage-loan broker, using Preact for a lightweight frontend and Bun for the backend.
 - Analyzed United States mortgage and private-lending workflows, including the forms and information exchanged throughout the loan process, to support borrower applications, lender collaboration, administrative oversight, and secure document handling.
@@ -53,72 +52,72 @@ I develop web and mobile applications for long-term clients sourced through Upwo
 
 **Technologies:** Preact, Bun, Cloudflare Workers, Cloudflare D1, Durable Objects, Cloudflare R2
 
-### Covius, LLC — Senior Software Engineer
+### Covius, LLC / Senior Software Engineer
 
-*January 2022 – April 2024 · Pompano Beach, FL*
+*January 2022 - April 2024 · Pompano Beach, FL*
 
-At Covius, a nationwide real estate technology and holdings company, I worked on the Senior Software Engineer's team of their RealtyBid.com unit, and helped bring a full redesign of the frontend and backend systems to reality. This real time, online, Real Estate Auction platform includes a modern REST API backend, modern responsive javascript powered front end, and many asynchronous feedback mechanisms, providing user's real time feedback about the current states of ongoing auctions. I was also responsible for building backend tools for the internal teams to use, so they can effectively administer the website and provider customer support with ease.
-
-#### Accomplishments
-
-- Participated in the complete redesign of a major legacy website, with tons of historical and legacy data
-- Helped manage and adapt a legacy database to a modern design
-- Created a responsive web application front end that functions just as well in a Desktop web browser as it does on a Phone
-- Refined the user experience with QA testers and business partners over many sprints and testing sessions utilizing effective communication
-- Utilized a modern technology stack including RxJS and Angular to keep the website ready for tomorrow
-
-### SEAD Software — Software Engineer
-
-*April 2021 – July 2022 · Delray Beach, FL*
-
-At SEAD Software I employ python and web development skills to design web applications and deliver business analytics for the healthcare industry and legal field. I also enriched company wide development operations by employing Azure DevOps and development pipelines to streamline team coordination.
+At Covius, a nationwide real estate technology and holdings company, I contributed to the frontend and backend redesign of RealtyBid.com, an online real estate auction platform. The platform combined a REST API backend, a responsive JavaScript frontend, and asynchronous updates to provide users with real-time auction status. I also built internal tools for website administration and customer support.
 
 #### Accomplishments
 
-- Designed and implemented python code using Google's cloud based AI Computer Vision API to recognize and digitally categorize physical laboratory documents.
-- Developed text messaging web application to autonomously communicate and respond to customer interactions and generate leads for law firms using the Twilio API.
+- Contributed to the complete redesign of a major legacy website containing extensive historical data.
+- Helped manage and adapt a legacy database to support the redesigned platform.
+- Built a responsive web application frontend for desktop and mobile browsers.
+- Refined the user experience with QA testers and business partners through iterative sprints and testing sessions.
+- Developed frontend functionality using Angular and RxJS.
+
+### SEAD Software / Software Engineer
+
+*April 2021 - July 2022 · Delray Beach, FL*
+
+At SEAD Software, I used Python and web development skills to build web applications and deliver business analytics for healthcare and legal clients. I also improved company-wide development operations with Azure DevOps and development pipelines to streamline team coordination.
+
+#### Accomplishments
+
+- Designed and implemented Python code using the Google Cloud Vision API to recognize and digitally categorize physical laboratory documents.
+- Developed a text messaging web application using the Twilio API to automate customer responses and generate leads for law firms.
 - Maintained and implemented Amazon Web Services infrastructure to support multiple projects
 - Implemented and trained staff on Microsoft Azure DevOps development platform infrastructure
-- Maintained a large GIT code repository for multiple clients
+- Maintained a large Git code repository for multiple clients
 
-### Clarity Diagnostics & Lab Solutions — Director of IT
+### Clarity Diagnostics & Lab Solutions / Director of IT
 
-*September 2020 – January 2022 · Boca Raton, FL*
+*September 2020 - January 2022 · Boca Raton, FL*
 
-Managed all IT needs and decision making for a boutique medical testing Laboratory and their Diagnostics test manufacturing business. Here I helped expand the company from its small sized roots to doing business with multiple outside entities across the country, including many local and state governments. I also managed software quality control, deployment and training for the company's sister company SEAD Software.
+Managed IT operations and technology decisions for a medical testing laboratory and diagnostics test manufacturing business. Supported the company's expansion to work with organizations nationwide, including local and state governments. I also managed software quality control, deployment, and training for its sister company, SEAD Software.
 
 #### Accomplishments
 
-- Implemented physical keycard/badge access security system for the entire laboratory facility
-- Implemented and maintained security standards for email and cloud based applications in Google Workspace and Microsoft 365
-- Maintained client facing websites
-- Expanded laboratory infrastructure and assisted in the QAing of medical testing equipment
+- Implemented a physical keycard/badge access security system for the entire laboratory facility
+- Implemented and maintained security standards for email and cloud-based applications in Google Workspace and Microsoft 365
+- Maintained client-facing websites
+- Expanded laboratory infrastructure and assisted with quality assurance testing of medical equipment
 - Managed and instructed other IT staff in their daily responsibilities
 
-### MyTap, aka Which Craft — Lead Developer
+### MyTap, aka Which Craft / Lead Developer
 
-*January 2016 – April 2020 · Albuquerque, NM*
+*January 2016 - April 2020 · Albuquerque, NM*
 
-At this small start up I worked in collaboration with a team of designers to create a craft beer recommendation engine that was based on web scraping and natural language processing of online beer reviews. This is where I got my first taste of what was to come with the power of Machine Learning and AI.
-
-#### Accomplishments
-
-- Implemented a robust web scraper in Python using the Scrapy python library
-- Created a responsive web application front end that functioned as a browser based phone application
-- Designed custom natural language processing code in python to create craft beer flavor profiles based on adjective frequency in craft beer review text.
-- Maintained a Django based web server backend to serve data from a PostgreSQL database backend
-
-### TriCore Reference Laboratories — Production Support Specialist
-
-*April 2013 – January 2017 · Albuquerque, NM*
-
-I worked as a technology specialist in the medical field, assisting multiple regional hospital staff with their daily technology needs, in the fast paced industry of health care. I would help with everything from urgent patient critical password resets, to troubleshooting of industry specific vertical applications like SunQuest, assisting in the retrieval of patient medical records and diagnostic information, while monitoring for performance and errors.
+At this startup, I collaborated with a team of designers to build a craft beer recommendation engine using web scraping and natural language processing (NLP) of online beer reviews. This work introduced me to practical applications of machine learning and AI.
 
 #### Accomplishments
 
-- Being responsible on the nightshift for the entire company production environment. Usually supported by 60 staff during the day, I was solely responsible for monitoring, troubleshooting, and escalating issues to the appropriate parties at night.
-- Proficient in multiple industry specific vertical applications, monitoring the transmission of patient records between multiple hospital's varied medical record systems.
-- Walked medical staff through time sensitive, patient critical, IT related troubleshooting.
+- Implemented a robust web scraper in Python using the Scrapy Python library
+- Created a responsive web application frontend for mobile browsers
+- Designed custom natural language processing code in Python to create craft beer flavor profiles based on adjective frequency in craft beer review text.
+- Maintained a Django backend serving data from a PostgreSQL database
+
+### TriCore Reference Laboratories / Production Support Specialist
+
+*April 2013 - January 2017 · Albuquerque, NM*
+
+Provided technology support to staff across multiple regional hospitals. Responsibilities included urgent password resets, troubleshooting healthcare applications such as Sunquest, retrieving patient medical records and diagnostic information, and monitoring systems for performance issues and errors.
+
+#### Accomplishments
+
+- Solely monitored and supported the company production environment overnight, handling troubleshooting and escalation for an environment supported by 60 staff during the day.
+- Monitored the transmission of patient records between hospitals using different medical record systems and healthcare applications.
+- Guided medical staff through time-sensitive IT troubleshooting affecting patient care.
 - Monitored critical hospital infrastructure for performance and errors, correcting them promptly.
 - Trained new help desk employees on their daily tasks and responsibilities
 - Remained on-call off hours for emergency assistance.
@@ -127,7 +126,7 @@ I worked as a technology specialist in the medical field, assisting multiple reg
 
 ### Programming Languages
 
-Python (including Flask and Django frameworks), Go, PHP, NodeJS, C and C++, JavaScript (including jQuery and AngularJS), TypeScript, CoffeeScript, HTML5, CSS3, SASS
+Python (Flask, Django), JavaScript (Node.js, jQuery, Angular, AngularJS, RxJS, Preact, Bun), TypeScript, Go, PHP, Java, Kotlin, C, C++, CoffeeScript, HTML5, CSS3, Sass
 
 ### Database Technologies
 
@@ -137,23 +136,24 @@ Python (including Flask and Django frameworks), Go, PHP, NodeJS, C and C++, Java
 
 ### Applications
 
-- **Programming:** Microsoft Visual Studio, Visual Studio Code, PyCharm, Sublime Text 3, Devart dbForge, Microsoft SQL Studio, VIM, Eclipse, GIT
+- **Programming:** Microsoft Visual Studio, Visual Studio Code, PyCharm, Sublime Text 3, Devart dbForge, Microsoft SQL Studio, Vim, Eclipse, Git
 - **Design:** Adobe Photoshop, Adobe Dreamweaver, Adobe Illustrator, Adobe Edge, Adobe InDesign
 - **Productivity:** Microsoft Office, Google Docs (Drive), WordPerfect Suite
-- **Virtualization:** VMWare, VirtualBox, Docker, Kubernettes
+- **Virtualization:** VMware, VirtualBox, Docker, Kubernetes
 
 ### Cloud Technologies
 
 - Microsoft 365 and Google Workspace Administration
-- Amazon Web Services Administration
+- Amazon Web Services (AWS) Administration
 - Microsoft Azure DevOps Administration
+- Cloudflare Workers, D1, Durable Objects, and R2
 
 ### Other
 
 - Jira Agile Project Management skills
-- Responsive Web design
+- Responsive web design
 - Advanced (and remote) Linux administration
-- Search Engine Optimization for Google and Bing search engines
+- Search engine optimization (SEO) for Google and Bing
 - Social media presence implementation (Facebook, Twitter, Instagram, etc.)
 
 ## Education

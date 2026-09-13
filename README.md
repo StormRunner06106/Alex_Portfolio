@@ -16,7 +16,36 @@ frontend/
   src/                   React pages, components, and custom CSS
 Alexander Herlan Resume 2024.pdf
 Alexander Herlan Resume 2024.md
+scripts/generate_resume.py Single-file Markdown → HTML → PDF generator
+resumes/                   Matching HTML/PDF files for each generated version
 ```
+
+## Generate a resume
+
+The standalone generator reads `Alexander Herlan Resume 2024.md`, creates a self-contained HTML document, and prints that exact HTML to PDF using Python Playwright. The template and CSS are in `scripts/generate_resume.py`. It follows the original PDF's Letter page size, narrow left column for section labels, right column for content, black dividers, and green header accents. It uses local Raleway/Lato fonts when available and Arial otherwise; updated content flows across as many pages as needed. The original PDF is only a design reference, and is not needed to run the generator.
+
+Install the generator dependencies separately from the web backend:
+
+```powershell
+.venv/Scripts/python.exe -m pip install Markdown==3.10.3 playwright==1.62.0
+.venv/Scripts/python.exe -m playwright install chromium
+.venv/Scripts/python.exe scripts/generate_resume.py
+```
+
+Each run creates the next unused pair, such as `resumes/resume-v1.html` and `resumes/resume-v1.pdf`, then `resume-v2.html` and `resume-v2.pdf`. Existing versions are never overwritten. To choose a version or Markdown source:
+
+```powershell
+.venv/Scripts/python.exe scripts/generate_resume.py --version 2026-09
+.venv/Scripts/python.exe scripts/generate_resume.py "path/to/resume.md" --version v3
+```
+
+Use `--browser msedge` or `--browser chrome` to render with an already installed browser instead of installing Chromium. `--output-dir` changes the destination; by default, output goes to the repository's `resumes` directory regardless of your working directory. You can also run the script with `uv run`, using its embedded dependency metadata (a supported browser is still required).
+
+Markdown format: start with one `# Name`, optionally follow with a bold professional title, then contact details. Use `##` for sections, `###` for roles/categories, and smaller headings for accomplishments/projects. Italic-only paragraphs become date/location lines. Lists, links, and tables are supported; the four-column References table is formatted as individual contact lines to match the original. All resume content is read from Markdown. Generation is local and does not publish the files or change the website's existing `/api/resume` download.
+
+Package references: [Python-Markdown](https://python-markdown.github.io/reference/) and [Playwright PDF rendering](https://playwright.dev/python/docs/api/class-page#page-pdf).
+
+For content updates, edit the Markdown first and rerun the generator to create a new matching HTML/PDF pair. Do not edit generated content directly. Each HTML file records the SHA-256 of its source text in a `source-sha256` meta tag, so its source revision can be checked. The generator rejects long dashes in visible Markdown text instead of silently rewriting them in the output. Earlier versions remain historical snapshots; regenerate after each Markdown edit to keep the latest pair current.
 
 ## Run locally
 
