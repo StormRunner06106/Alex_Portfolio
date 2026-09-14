@@ -20,3 +20,10 @@
   from previously answered groups.
 - Wrap text in `answers.txt` at 80 characters per line to avoid horizontal
   scrolling.
+- For question-list responses, provide only concise, ready-to-use answers.
+  Omit preambles, clarification questions, confirmation requests, draft labels,
+  missing-information notes, and other commentary from the answer content.
+- Use the resume, project context, and reasonable assumptions to answer directly
+  without asking follow-up questions. Do not invent personal experience,
+  credentials, project details, or outcomes; use relevant supported experience
+  when a specific detail is unavailable.
