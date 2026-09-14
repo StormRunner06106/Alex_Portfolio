@@ -192,6 +192,12 @@ Edit the files in `backend/data` to update profile, career, and skill content. T
 
 Production: **https://alex-herlan-portfolio.vercel.app**
 
+Google Search Console verification uses `frontend/public/google484d40c8dacd0b93.html`
+(served at `/google484d40c8dacd0b93.html`) and the verification meta tag in
+`frontend/index.html`. Keep both permanently, including after verification succeeds.
+Use a URL-prefix property for `https://alex-herlan-portfolio.vercel.app/` and
+verify with the HTML file or HTML tag method.
+
 Vercel project: `storm-runners-projects/alex-herlan-portfolio`. Production
 Supabase, Dropbox, admin, and cron secrets are configured. SMTP is not yet
 configured. Deploy updates from this directory with `npx.cmd vercel --prod`.
