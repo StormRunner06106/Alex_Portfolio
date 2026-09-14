@@ -24,7 +24,7 @@ resumes/                   Matching HTML/PDF files for each generated version
 
 The standalone generator reads `Alexander Herlan Resume 2024.md`, creates a self-contained HTML document, and prints that exact HTML to PDF using Python Playwright. The template and CSS are in `scripts/generate_resume.py`. The default `--layout original` retains the sidebar design with left-column section labels, right-column content, Letter pages, and green header accents. Section starts use normal-flow grid layout to preserve the PDF text reading order. Use `--layout ats` for the optional single-column layout. Both layouts use the same Markdown and local Raleway/Lato fonts when available, with Arial as a fallback. The original PDF is only a design reference, and is not needed to run the generator.
 
-**Selected website resume: version 5.** `/api/resume` serves the exact `resumes/resume-v5.pdf` file as `Alexander-Herlan-Resume-v5.pdf`. The root Markdown has been restored to the source revision recorded in `resumes/resume-v5.html`. New generated versions remain drafts until the selected path in `backend/main.py` is deliberately changed; include the selected PDF when deploying the backend. The experience content in both local JSON and Supabase has been aligned with version 5.
+**Selected website resume: version 11.** `/api/resume` serves the exact `resumes/resume-v11.pdf` file as `Alexander-Herlan-Resume-v11.pdf`. Version 11 preserves version 5's content and layout, changing only the email to `alex@herlan.dev`. The root Markdown matches the source hash recorded in `resumes/resume-v11.html`. New generated versions remain drafts until the selected path in `backend/main.py` is deliberately changed; include the selected PDF when deploying the backend. The experience content in both local JSON and Supabase has been aligned with version 5.
 
 Install the generator dependencies separately from the web backend:
 
@@ -250,7 +250,7 @@ npx.cmd vercel --prod
 After deployment, check `/`, a direct link such as `/experience`,
 `/api/health`, `/api/posts`, and `/api/resume`. Check admin sign-in and upload a
 small file before publishing new content. The project retains the selected
-`resumes/resume-v5.pdf`; local secrets, upload backups, and draft resumes are
+`resumes/resume-v11.pdf`; local secrets, upload backups, and draft resumes are
 excluded from deployment by `.vercelignore`.
 
 Vercel uploads are limited to **4 MB per file** in both the UI and API, below

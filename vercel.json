@@ -7,7 +7,7 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 60,
-      "includeFiles": "{backend/**,resumes/resume-v5.pdf}",
+      "includeFiles": "{backend/**,resumes/resume-v11.pdf}",
       "excludeFiles": "{frontend/**,node_modules/**,.venv/**,scripts/**,backend/test_*.py,backend/.env*,backend/data/uploads/**}"
     }
   },

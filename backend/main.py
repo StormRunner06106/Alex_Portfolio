@@ -35,7 +35,7 @@ PROJECT_DIR = BASE_DIR.parent
 DATA_DIR = BASE_DIR / "data"
 FRONTEND_DIST = PROJECT_DIR / "frontend" / "dist"
 # Pin the website to the selected resume; generating a draft must not publish it.
-RESUME_PATH = PROJECT_DIR / "resumes" / "resume-v5.pdf"
+RESUME_PATH = PROJECT_DIR / "resumes" / "resume-v11.pdf"
 POSTS_PATH = DATA_DIR / "posts.json"
 POSTS_LOCK = threading.Lock()
 ADMIN_TOKEN_TTL = 60 * 60 * 4
@@ -620,7 +620,7 @@ def resume() -> FileResponse:
     return FileResponse(
         RESUME_PATH,
         media_type="application/pdf",
-        filename="Alexander-Herlan-Resume-v5.pdf",
+        filename="Alexander-Herlan-Resume-v11.pdf",
         content_disposition_type="inline",
     )
 
@@ -631,7 +631,7 @@ def deliver_contact_email(payload: ContactPayload) -> None:
     smtp_username = os.getenv("SMTP_USERNAME")
     smtp_password = os.getenv("SMTP_PASSWORD")
     from_email = os.getenv("SMTP_FROM_EMAIL") or smtp_username
-    to_email = os.getenv("CONTACT_TO_EMAIL", "alexwherlan@gmail.com")
+    to_email = os.getenv("CONTACT_TO_EMAIL", "alex@herlan.dev")
     use_tls = os.getenv("SMTP_USE_TLS", "true").casefold() == "true"
     use_ssl = os.getenv("SMTP_USE_SSL", "false").casefold() == "true"
 

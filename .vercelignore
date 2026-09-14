@@ -15,6 +15,6 @@ backend/seed_*.py
 backend/connect_dropbox.py
 backend/migrate_media_dropbox.py
 resumes/*
-!resumes/resume-v5.pdf
+!resumes/resume-v11.pdf
 Alexander Herlan Resume 2024.md
 Alexander Herlan Resume 2024.pdf
