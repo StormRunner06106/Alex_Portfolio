@@ -1,0 +1,10 @@
+Job Application Questions and Answers
+
+Answers are based on Alexander Herlan Resume 2024.md, the source for the selected version
+5 resume. Add future questions and answers below.
+
+1. Which of these have you worked on, and where? Financial information systems, financial
+data in healthcare, audio and transcription, or AI-intensive products.
+
+Answer:
+Financial systems: Equity Funding Source (mortgage lending), Covius (real estate auctions). AI: SafeSchoolz (object detection), MyTap (NLP), SEAD (document recognition).
