@@ -1,33 +1,66 @@
 Job Application Questions and Answers
 
-Answers are based on Alexander Herlan Resume 2024.md, the source for the selected version
+Answers are based on Alexander Herlan Resume 2024.md, the source for the
+selected version
 5 resume. Add future questions and answers below.
 
-1. Which of these have you worked on, and where? Financial information systems, financial
+1. Which of these have you worked on, and where? Financial information systems,
+financial
 data in healthcare, audio and transcription, or AI-intensive products.
 
 Answer:
-Financial systems: Equity Funding Source (mortgage lending), Covius (real estate auctions). AI: SafeSchoolz (object detection), MyTap (NLP), SEAD (document recognition).
+Financial systems: Equity Funding Source (mortgage lending), Covius (real estate
+auctions). AI: SafeSchoolz (object detection), MyTap (NLP), SEAD (document
+recognition).
 
 
-2. This role requires a minimum of 5-10 years of experience in software development. Can you confirm you meet this requirement and briefly describe the nature of your experience?
+2. This role requires a minimum of 5-10 years of experience in software
+development. Can you confirm you meet this requirement and briefly describe the
+nature of your experience?
 
 Answer:
-Yes. I have more than nine years of professional software development experience, within a broader technology career spanning over 27 years. My roles include Lead Developer at MyTap, Software Engineer at SEAD Software, Senior Software Engineer at Covius, and independent full-stack development. My experience covers web and mobile applications, REST APIs, database engineering, legacy-system modernization, cloud deployment, and ongoing production support.
+Yes. I have more than nine years of professional software development
+experience, within a broader technology career spanning over 27 years. My roles
+include Lead Developer at MyTap, Software Engineer at SEAD Software, Senior
+Software Engineer at Covius, and independent full-stack development. My
+experience covers web and mobile applications, REST APIs, database engineering,
+legacy-system modernization, cloud deployment, and ongoing production support.
 
-3. Please describe your hands-on experience with full-stack development, specifically with the PERN (PostgreSQL, Express.js, React, Node.js) stack or comparable frameworks.
+3. Please describe your hands-on experience with full-stack development,
+specifically with the PERN (PostgreSQL, Express.js, React, Node.js) stack or
+comparable frameworks.
 
 Answer:
-I have extensive hands-on experience with comparable full-stack frameworks, primarily using JavaScript, Python, and relational databases. At MyTap, I built a responsive frontend and maintained a Django backend with PostgreSQL for a recommendation platform. At Covius, I contributed to the frontend and backend redesign of RealtyBid.com, using Angular and RxJS with REST APIs and asynchronous auction updates. More recently, I built a mortgage-lending platform using Preact and Bun, deployed on Cloudflare, and a PHP/PostgreSQL membership platform. These projects involved frontend development, backend business logic, database integration, and deployment.
+I have extensive hands-on experience with comparable full-stack frameworks,
+primarily using JavaScript, Python, and relational databases. At MyTap, I built
+a responsive frontend and maintained a Django backend with PostgreSQL for a
+recommendation platform. At Covius, I contributed to the frontend and backend
+redesign of RealtyBid.com, using Angular and RxJS with REST APIs and
+asynchronous auction updates. More recently, I built a mortgage-lending platform
+using Preact and Bun, deployed on Cloudflare, and a PHP/PostgreSQL membership
+platform. These projects involved frontend development, backend business logic,
+database integration, and deployment.
 
-4. The client requires proficiency in infrastructure coding tools like Terraform. Can you provide an example of a project where you used Terraform to define and manage cloud infrastructure?
+4. The client requires proficiency in infrastructure coding tools like
+Terraform. Can you provide an example of a project where you used Terraform to
+define and manage cloud infrastructure?
 
 Answer status: Needs confirmation before submission.
-The resume documents AWS infrastructure management and Cloudflare deployments, but no Terraform project. Have you used Terraform directly? If so, which project and cloud resources did you manage?
+The resume documents AWS infrastructure management and Cloudflare deployments,
+but no Terraform project. Have you used Terraform directly? If so, which project
+and cloud resources did you manage?
 
-5. This position requires expertise in managing CI/CD pipelines. Please describe a CI/CD pipeline you have built or significantly managed, including the tools used and the automation achieved.
+5. This position requires expertise in managing CI/CD pipelines. Please describe
+a CI/CD pipeline you have built or significantly managed, including the tools
+used and the automation achieved.
 
 Answer (draft pending automation details):
-At SEAD Software, I implemented Microsoft Azure DevOps development infrastructure and worked on development pipelines supporting healthcare and legal applications. I maintained a large Git repository serving multiple clients, trained staff on Azure DevOps, and maintained AWS infrastructure supporting those projects. My responsibilities also included software quality control and deployment through my related role at Clarity Diagnostics.
+At SEAD Software, I implemented Microsoft Azure DevOps development
+infrastructure and worked on development pipelines supporting healthcare and
+legal applications. I maintained a large Git repository serving multiple
+clients, trained staff on Azure DevOps, and maintained AWS infrastructure
+supporting those projects. My responsibilities also included software quality
+control and deployment through my related role at Clarity Diagnostics.
 
-Details needed before submission: What did those pipelines automate (builds, tests, packaging, deployments), and where did they deploy?
+Details needed before submission: What did those pipelines automate (builds,
+tests, packaging, deployments), and where did they deploy?
